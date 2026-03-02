@@ -1,0 +1,512 @@
+"use client";
+
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type KeyboardEvent,
+} from "react";
+import { codeToHtml } from "shiki";
+import { toPng } from "html-to-image";
+
+type Language = "typescript" | "python";
+
+interface Gradient {
+  name: string;
+  css: string;
+}
+
+const GRADIENTS: Gradient[] = [
+  {
+    name: "Void",
+    css: "linear-gradient(145deg, #000000 0%, #0a0a0a 50%, #000000 100%)",
+  },
+  {
+    name: "Midnight",
+    css: "linear-gradient(145deg, #0a0a0a 0%, #1a1a2e 50%, #16162a 100%)",
+  },
+  {
+    name: "Charcoal",
+    css: "linear-gradient(145deg, #1c1c1c 0%, #2d2d2d 50%, #1c1c1c 100%)",
+  },
+  {
+    name: "Storm",
+    css: "linear-gradient(145deg, #374151 0%, #1f2937 50%, #374151 100%)",
+  },
+  {
+    name: "Fog",
+    css: "linear-gradient(145deg, #9ca3af 0%, #6b7280 50%, #9ca3af 100%)",
+  },
+  {
+    name: "Silver",
+    css: "linear-gradient(145deg, #d1d5db 0%, #e5e7eb 50%, #d1d5db 100%)",
+  },
+  {
+    name: "Pearl",
+    css: "linear-gradient(145deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%)",
+  },
+  {
+    name: "Snow",
+    css: "linear-gradient(145deg, #ffffff 0%, #f9fafb 50%, #ffffff 100%)",
+  },
+];
+
+const DEFAULT_LEFT = `function getUser(id: string) {
+  const response = fetch(\`/api/users/\${id}\`);
+  const data = response.json();
+  return data;
+}`;
+
+const DEFAULT_RIGHT = `async function getUser(
+  id: string
+): Promise<User> {
+  const res = await fetch(\`/api/users/\${id}\`);
+  if (!res.ok) throw new Error("Not found");
+  return res.json() as Promise<User>;
+}`;
+
+const SHIKI_THEME = "github-dark";
+
+const MONO_FONT =
+  'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace';
+
+export default function SplitView() {
+  const [leftCode, setLeftCode] = useState(DEFAULT_LEFT);
+  const [rightCode, setRightCode] = useState(DEFAULT_RIGHT);
+  const [leftLang, setLeftLang] = useState<Language>("typescript");
+  const [rightLang, setRightLang] = useState<Language>("typescript");
+  const [gradientIndex, setGradientIndex] = useState(1);
+  const [leftLabel, setLeftLabel] = useState("Before");
+  const [rightLabel, setRightLabel] = useState("After");
+  const [leftHtml, setLeftHtml] = useState("");
+  const [rightHtml, setRightHtml] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [fontSize, setFontSize] = useState(14);
+  const [padding, setPadding] = useState(24);
+  const [layout, setLayout] = useState<"side" | "stack">("side");
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  // Highlight code with shiki
+  useEffect(() => {
+    let cancelled = false;
+    async function highlight() {
+      try {
+        const [lHtml, rHtml] = await Promise.all([
+          codeToHtml(leftCode || " ", { lang: leftLang, theme: SHIKI_THEME }),
+          codeToHtml(rightCode || " ", { lang: rightLang, theme: SHIKI_THEME }),
+        ]);
+        if (!cancelled) {
+          setLeftHtml(lHtml);
+          setRightHtml(rHtml);
+        }
+      } catch (e) {
+        console.error("Shiki highlighting failed:", e);
+      }
+    }
+    highlight();
+    return () => {
+      cancelled = true;
+    };
+  }, [leftCode, rightCode, leftLang, rightLang]);
+
+  const handleExport = useCallback(async () => {
+    if (!exportRef.current) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toPng(exportRef.current, {
+        pixelRatio: 2,
+      });
+      const link = document.createElement("a");
+      link.download = "split-compare.png";
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Export failed:", err);
+    } finally {
+      setExporting(false);
+    }
+  }, []);
+
+  const handleCopy = useCallback(async () => {
+    if (!exportRef.current) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toPng(exportRef.current, {
+        pixelRatio: 2,
+      });
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": blob }),
+      ]);
+    } catch (err) {
+      console.error("Copy failed:", err);
+    } finally {
+      setExporting(false);
+    }
+  }, []);
+
+  // Handle Tab key in textareas
+  const handleKeyDown = (
+    e: KeyboardEvent<HTMLTextAreaElement>,
+    setter: (v: string) => void
+  ) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const target = e.currentTarget;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const value = target.value;
+      const newValue = value.substring(0, start) + "  " + value.substring(end);
+      setter(newValue);
+      // Restore cursor position after React re-render
+      requestAnimationFrame(() => {
+        target.selectionStart = target.selectionEnd = start + 2;
+      });
+    }
+  };
+
+  const gradient = GRADIENTS[gradientIndex];
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      {/* Header */}
+      <header className="border-b border-zinc-800/60 px-6 py-4">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between">
+          <h1 className="text-lg font-semibold tracking-tight">
+            <span className="text-zinc-500">split</span>
+            <span className="text-zinc-300">.</span>
+            <span className="text-white">compare</span>
+          </h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopy}
+              disabled={exporting}
+              className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-700 disabled:opacity-50"
+            >
+              Copy Image
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {exporting ? "Exporting..." : "Export PNG"}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-[1400px] px-6 py-6">
+        {/* Controls */}
+        <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+          {/* Font Size */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Size
+            </label>
+            <select
+              value={fontSize}
+              onChange={(e) => setFontSize(Number(e.target.value))}
+              className="rounded-md border border-zinc-700/60 bg-zinc-900 px-3 py-1.5 text-sm text-white focus:border-zinc-500 focus:outline-none"
+            >
+              <option value={12}>12px</option>
+              <option value={13}>13px</option>
+              <option value={14}>14px</option>
+              <option value={15}>15px</option>
+              <option value={16}>16px</option>
+            </select>
+          </div>
+
+          {/* Padding */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Pad
+            </label>
+            <select
+              value={padding}
+              onChange={(e) => setPadding(Number(e.target.value))}
+              className="rounded-md border border-zinc-700/60 bg-zinc-900 px-3 py-1.5 text-sm text-white focus:border-zinc-500 focus:outline-none"
+            >
+              <option value={12}>12px</option>
+              <option value={16}>16px</option>
+              <option value={20}>20px</option>
+              <option value={24}>24px</option>
+              <option value={32}>32px</option>
+              <option value={40}>40px</option>
+            </select>
+          </div>
+
+          {/* Layout */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Layout
+            </label>
+            <div className="flex overflow-hidden rounded-md border border-zinc-700/60">
+              <button
+                onClick={() => setLayout("side")}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  layout === "side"
+                    ? "bg-zinc-700 text-white"
+                    : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                Side by Side
+              </button>
+              <button
+                onClick={() => setLayout("stack")}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  layout === "stack"
+                    ? "bg-zinc-700 text-white"
+                    : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                Stacked
+              </button>
+            </div>
+          </div>
+
+          {/* Labels */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Labels
+            </label>
+            <input
+              value={leftLabel}
+              onChange={(e) => setLeftLabel(e.target.value)}
+              className="w-24 rounded-md border border-zinc-700/60 bg-zinc-900 px-3 py-1.5 text-sm text-white focus:border-zinc-500 focus:outline-none"
+              placeholder="Left"
+            />
+            <input
+              value={rightLabel}
+              onChange={(e) => setRightLabel(e.target.value)}
+              className="w-24 rounded-md border border-zinc-700/60 bg-zinc-900 px-3 py-1.5 text-sm text-white focus:border-zinc-500 focus:outline-none"
+              placeholder="Right"
+            />
+          </div>
+
+          {/* Gradients */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              BG
+            </label>
+            <div className="flex gap-1.5">
+              {GRADIENTS.map((g, i) => (
+                <button
+                  key={g.name}
+                  onClick={() => setGradientIndex(i)}
+                  title={g.name}
+                  className={`h-6 w-6 rounded-full transition-all ${
+                    i === gradientIndex
+                      ? "ring-2 ring-white ring-offset-2 ring-offset-zinc-950"
+                      : "ring-1 ring-zinc-600 hover:ring-zinc-400"
+                  }`}
+                  style={{ background: g.css }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Code Editors */}
+        <div className="mb-8 grid grid-cols-2 gap-4">
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                {leftLabel}
+              </label>
+              <select
+                value={leftLang}
+                onChange={(e) => setLeftLang(e.target.value as Language)}
+                className="rounded border border-zinc-700/60 bg-zinc-900 px-2 py-0.5 text-xs text-zinc-400 focus:border-zinc-500 focus:outline-none"
+              >
+                <option value="typescript">TypeScript</option>
+                <option value="python">Python</option>
+              </select>
+            </div>
+            <textarea
+              value={leftCode}
+              onChange={(e) => setLeftCode(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, setLeftCode)}
+              className="h-44 w-full resize-y rounded-lg border border-zinc-800 bg-zinc-900/80 p-4 font-mono text-sm leading-relaxed text-zinc-100 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none"
+              placeholder="Paste your first snippet..."
+              spellCheck={false}
+            />
+          </div>
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                {rightLabel}
+              </label>
+              <select
+                value={rightLang}
+                onChange={(e) => setRightLang(e.target.value as Language)}
+                className="rounded border border-zinc-700/60 bg-zinc-900 px-2 py-0.5 text-xs text-zinc-400 focus:border-zinc-500 focus:outline-none"
+              >
+                <option value="typescript">TypeScript</option>
+                <option value="python">Python</option>
+              </select>
+            </div>
+            <textarea
+              value={rightCode}
+              onChange={(e) => setRightCode(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, setRightCode)}
+              className="h-44 w-full resize-y rounded-lg border border-zinc-800 bg-zinc-900/80 p-4 font-mono text-sm leading-relaxed text-zinc-100 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none"
+              placeholder="Paste your second snippet..."
+              spellCheck={false}
+            />
+          </div>
+        </div>
+
+        {/* Preview */}
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+            Preview
+          </span>
+          <span className="text-xs text-zinc-600">2x retina export</span>
+        </div>
+
+        <div className="overflow-x-auto rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-6">
+          {/* ---- Exportable Card ---- */}
+          <div
+            ref={exportRef}
+            style={{
+              background: gradient.css,
+              padding: "52px",
+              borderRadius: "20px",
+              width: "fit-content",
+              minWidth: layout === "stack" ? "auto" : "900px",
+            }}
+          >
+            {/* Window Card */}
+            <div
+              style={{
+                background: "#0d1117",
+                borderRadius: "14px",
+                overflow: "hidden",
+                border: "1px solid rgba(255,255,255,0.07)",
+                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+              }}
+            >
+              {/* Title bar with traffic lights */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "18px 20px 0",
+                }}
+              >
+                <div
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    background: "#ff5f57",
+                  }}
+                />
+                <div
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    background: "#febc2e",
+                  }}
+                />
+                <div
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    background: "#28c840",
+                  }}
+                />
+              </div>
+
+              {/* Code panels */}
+              <div style={{ display: "flex", flexDirection: layout === "stack" ? "column" : "row" }}>
+                {/* Left panel */}
+                <div style={{ flex: 1, padding: `${padding}px`, paddingBottom: layout === "stack" ? `${padding / 2}px` : `${padding}px` }}>
+                  {leftLabel && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: "#7d8590",
+                        marginBottom: "14px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        fontFamily:
+                          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                      }}
+                    >
+                      {leftLabel}
+                    </div>
+                  )}
+                  <div
+                    className="shiki-output"
+                    style={{
+                      fontFamily: MONO_FONT,
+                      fontSize: `${fontSize}px`,
+                      lineHeight: 1.7,
+                      whiteSpace: "pre",
+                    }}
+                    dangerouslySetInnerHTML={{ __html: leftHtml }}
+                  />
+                </div>
+
+                {/* Divider */}
+                <div
+                  style={layout === "stack" ? {
+                    height: "1px",
+                    background: "rgba(255,255,255,0.06)",
+                    marginLeft: `${padding}px`,
+                    marginRight: `${padding}px`,
+                  } : {
+                    width: "1px",
+                    background: "rgba(255,255,255,0.06)",
+                    alignSelf: "stretch",
+                    marginTop: "16px",
+                    marginBottom: "16px",
+                  }}
+                />
+
+                {/* Right panel */}
+                <div style={{ flex: 1, padding: `${padding}px`, paddingTop: layout === "stack" ? `${padding / 2}px` : `${padding}px` }}>
+                  {rightLabel && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: "#7d8590",
+                        marginBottom: "14px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        fontFamily:
+                          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                      }}
+                    >
+                      {rightLabel}
+                    </div>
+                  )}
+                  <div
+                    className="shiki-output"
+                    style={{
+                      fontFamily: MONO_FONT,
+                      fontSize: `${fontSize}px`,
+                      lineHeight: 1.7,
+                      whiteSpace: "pre",
+                    }}
+                    dangerouslySetInnerHTML={{ __html: rightHtml }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* ---- End Exportable Card ---- */}
+        </div>
+      </main>
+    </div>
+  );
+}
