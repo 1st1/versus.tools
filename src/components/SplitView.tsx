@@ -10,7 +10,22 @@ import {
 import { codeToHtml } from "shiki";
 import { toPng } from "html-to-image";
 
-type Language = "typescript" | "python";
+const LANGUAGES = [
+  { value: "typescript", label: "TypeScript" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "python", label: "Python" },
+  { value: "java", label: "Java" },
+  { value: "csharp", label: "C#" },
+  { value: "cpp", label: "C++" },
+  { value: "go", label: "Go" },
+  { value: "rust", label: "Rust" },
+  { value: "swift", label: "Swift" },
+  { value: "kotlin", label: "Kotlin" },
+  { value: "php", label: "PHP" },
+  { value: "ruby", label: "Ruby" },
+] as const;
+
+type Language = (typeof LANGUAGES)[number]["value"];
 
 interface Gradient {
   name: string;
@@ -321,8 +336,9 @@ export default function SplitView() {
                 onChange={(e) => setLeftLang(e.target.value as Language)}
                 className="rounded border border-zinc-700/60 bg-zinc-900 px-2 py-0.5 text-xs text-zinc-400 focus:border-zinc-500 focus:outline-none"
               >
-                <option value="typescript">TypeScript</option>
-                <option value="python">Python</option>
+                {LANGUAGES.map((l) => (
+                  <option key={l.value} value={l.value}>{l.label}</option>
+                ))}
               </select>
             </div>
             <textarea
@@ -344,8 +360,9 @@ export default function SplitView() {
                 onChange={(e) => setRightLang(e.target.value as Language)}
                 className="rounded border border-zinc-700/60 bg-zinc-900 px-2 py-0.5 text-xs text-zinc-400 focus:border-zinc-500 focus:outline-none"
               >
-                <option value="typescript">TypeScript</option>
-                <option value="python">Python</option>
+                {LANGUAGES.map((l) => (
+                  <option key={l.value} value={l.value}>{l.label}</option>
+                ))}
               </select>
             </div>
             <textarea
