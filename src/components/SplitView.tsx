@@ -374,7 +374,6 @@ export default function SplitView() {
             style={{
               background: gradient.css,
               padding: "52px",
-              borderRadius: "20px",
               width: "fit-content",
               minWidth: layout === "stack" ? "auto" : "900px",
             }}
@@ -506,6 +505,7 @@ export default function SplitView() {
           </div>
           {/* ---- End Exportable Card ---- */}
         </div>
+
       </main>
     </div>
   );
