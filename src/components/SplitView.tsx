@@ -386,47 +386,26 @@ export default function SplitView() {
                 overflow: "hidden",
                 border: "1px solid rgba(255,255,255,0.07)",
                 boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+                display: "flex",
+                flexDirection: layout === "stack" ? "column" : "row",
               }}
             >
-              {/* Title bar with traffic lights */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "18px 20px 0",
-                }}
-              >
+              {/* Left panel */}
+              <div style={{ flex: 1 }}>
+                {/* Traffic lights */}
                 <div
                   style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    background: "#ff5f57",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: `18px ${padding}px 0`,
                   }}
-                />
-                <div
-                  style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    background: "#febc2e",
-                  }}
-                />
-                <div
-                  style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    background: "#28c840",
-                  }}
-                />
-              </div>
-
-              {/* Code panels */}
-              <div style={{ display: "flex", flexDirection: layout === "stack" ? "column" : "row" }}>
-                {/* Left panel */}
-                <div style={{ flex: 1, padding: `${padding}px`, paddingBottom: layout === "stack" ? `${padding / 2}px` : `${padding}px` }}>
+                >
+                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#ff5f57" }} />
+                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#febc2e" }} />
+                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#28c840" }} />
+                </div>
+                <div style={{ padding: `${padding}px`, paddingBottom: layout === "stack" ? `${padding / 2}px` : `${padding}px` }}>
                   {leftLabel && (
                     <div
                       style={{
@@ -454,52 +433,47 @@ export default function SplitView() {
                     dangerouslySetInnerHTML={{ __html: leftHtml }}
                   />
                 </div>
+              </div>
 
-                {/* Divider */}
-                <div
-                  style={layout === "stack" ? {
-                    height: "1px",
-                    background: "rgba(255,255,255,0.06)",
-                    marginLeft: `${padding}px`,
-                    marginRight: `${padding}px`,
-                  } : {
-                    width: "1px",
-                    background: "rgba(255,255,255,0.06)",
-                    alignSelf: "stretch",
-                    marginTop: "16px",
-                    marginBottom: "16px",
-                  }}
-                />
+              {/* Divider */}
+              <div
+                style={layout === "stack" ? {
+                  height: "1px",
+                  background: "rgba(255,255,255,0.06)",
+                } : {
+                  width: "1px",
+                  background: "rgba(255,255,255,0.06)",
+                }}
+              />
 
-                {/* Right panel */}
-                <div style={{ flex: 1, padding: `${padding}px`, paddingTop: layout === "stack" ? `${padding / 2}px` : `${padding}px` }}>
-                  {rightLabel && (
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: "#7d8590",
-                        marginBottom: "14px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        fontFamily:
-                          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                      }}
-                    >
-                      {rightLabel}
-                    </div>
-                  )}
+              {/* Right panel */}
+              <div style={{ flex: 1, padding: `${padding}px`, paddingTop: layout === "stack" ? `${padding / 2}px` : `${padding}px` }}>
+                {rightLabel && (
                   <div
-                    className="shiki-output"
                     style={{
-                      fontFamily: MONO_FONT,
-                      fontSize: `${fontSize}px`,
-                      lineHeight: 1.7,
-                      whiteSpace: "pre",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#7d8590",
+                      marginBottom: "14px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      fontFamily:
+                        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                     }}
-                    dangerouslySetInnerHTML={{ __html: rightHtml }}
-                  />
-                </div>
+                  >
+                    {rightLabel}
+                  </div>
+                )}
+                <div
+                  className="shiki-output"
+                  style={{
+                    fontFamily: MONO_FONT,
+                    fontSize: `${fontSize}px`,
+                    lineHeight: 1.7,
+                    whiteSpace: "pre",
+                  }}
+                  dangerouslySetInnerHTML={{ __html: rightHtml }}
+                />
               </div>
             </div>
           </div>
