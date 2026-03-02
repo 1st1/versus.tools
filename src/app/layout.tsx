@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Split — Side-by-Side Code Comparison",
+  title: "versus.tools — Side-by-Side Code Comparison",
   description: "Create beautiful side-by-side code comparison images for social sharing",
 };
 

@@ -118,7 +118,7 @@ export default function SplitView() {
         pixelRatio: 2,
       });
       const link = document.createElement("a");
-      link.download = "split-compare.png";
+      link.download = "versus-tools.png";
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -175,9 +175,9 @@ export default function SplitView() {
       <header className="border-b border-zinc-800/60 px-6 py-4">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between">
           <h1 className="text-lg font-semibold tracking-tight">
-            <span className="text-zinc-500">split</span>
+            <span className="text-zinc-500">versus</span>
             <span className="text-zinc-300">.</span>
-            <span className="text-white">compare</span>
+            <span className="text-white">tools</span>
           </h1>
           <div className="flex items-center gap-2">
             <button
