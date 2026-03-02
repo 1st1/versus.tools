@@ -31,6 +31,8 @@ interface Gradient {
   name: string;
   css: string;
   dots?: boolean;
+  transparent?: boolean;
+  windowBg?: string;
 }
 
 const GRADIENTS: Gradient[] = [
@@ -71,6 +73,12 @@ const GRADIENTS: Gradient[] = [
     name: "Snow",
     css: "linear-gradient(145deg, #ffffff 0%, #f9fafb 50%, #ffffff 100%)",
   },
+  {
+    name: "Transparent",
+    css: "transparent",
+    transparent: true,
+    windowBg: "rgba(5, 5, 5, 0.95)",
+  },
 ];
 
 const DEFAULT_LEFT = `function getUser(id: string) {
@@ -105,6 +113,7 @@ export default function SplitView() {
   const [exporting, setExporting] = useState(false);
   const [fontSize, setFontSize] = useState(14);
   const [padding, setPadding] = useState(24);
+  const [margin, setMargin] = useState(52);
   const [layout, setLayout] = useState<"side" | "stack">("side");
   const [grayDots, setGrayDots] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -260,6 +269,26 @@ export default function SplitView() {
             </select>
           </div>
 
+          {/* Margin */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Margin
+            </label>
+            <select
+              value={margin}
+              onChange={(e) => setMargin(Number(e.target.value))}
+              className="rounded-md border border-zinc-700/60 bg-zinc-900 px-3 py-1.5 text-sm text-white focus:border-zinc-500 focus:outline-none"
+            >
+              <option value={2}>2px</option>
+              <option value={8}>8px</option>
+              <option value={16}>16px</option>
+              <option value={24}>24px</option>
+              <option value={32}>32px</option>
+              <option value={52}>52px</option>
+              <option value={64}>64px</option>
+            </select>
+          </div>
+
           {/* Layout */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -342,9 +371,11 @@ export default function SplitView() {
                       : "ring-1 ring-zinc-600 hover:ring-zinc-400"
                   }`}
                   style={{
-                    background: g.dots
-                      ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${g.css}`
-                      : g.css,
+                    background: g.transparent
+                      ? "conic-gradient(#555 25%, #333 25% 50%, #555 50% 75%, #333 75%) 0 0 / 6px 6px"
+                      : g.dots
+                        ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${g.css}`
+                        : g.css,
                   }}
                 />
               ))}
@@ -418,7 +449,7 @@ export default function SplitView() {
             ref={exportRef}
             style={{
               background: gradient.css,
-              padding: "52px",
+              padding: `${margin}px`,
               width: "fit-content",
               minWidth: layout === "stack" ? "auto" : "900px",
               position: "relative",
@@ -440,7 +471,7 @@ export default function SplitView() {
             <div
               style={{
                 position: "relative",
-                background: "rgba(13, 17, 23, 0.85)",
+                background: gradient.windowBg || "rgba(13, 17, 23, 0.85)",
                 borderRadius: "14px",
                 overflow: "hidden",
                 border: "1px solid rgba(255,255,255,0.07)",
