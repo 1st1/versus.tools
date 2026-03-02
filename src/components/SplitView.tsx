@@ -5,6 +5,8 @@ import {
   useEffect,
   useRef,
   useCallback,
+  useContext,
+  createContext,
   type KeyboardEvent,
 } from "react";
 import { codeToHtml } from "shiki";
@@ -100,22 +102,67 @@ const SHIKI_THEME = "github-dark";
 const MONO_FONT =
   'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace';
 
-export default function SplitView() {
-  const [leftCode, setLeftCode] = useState(DEFAULT_LEFT);
-  const [rightCode, setRightCode] = useState(DEFAULT_RIGHT);
-  const [leftLang, setLeftLang] = useState<Language>("typescript");
-  const [rightLang, setRightLang] = useState<Language>("typescript");
-  const [gradientIndex, setGradientIndex] = useState(1);
-  const [leftLabel, setLeftLabel] = useState("Before");
-  const [rightLabel, setRightLabel] = useState("After");
+function loadAll(): Record<string, unknown> {
+  if (typeof window === "undefined") return {};
+  const data: Record<string, unknown> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k?.startsWith("vs:")) {
+      try { data[k.slice(3)] = JSON.parse(localStorage.getItem(k)!); } catch {}
+    }
+  }
+  return data;
+}
+
+const StoreContext = createContext<Record<string, unknown>>({});
+
+function usePersist<T>(key: string, fallback: T) {
+  const store = useContext(StoreContext);
+  const [value, setValue] = useState<T>(
+    () => (key in store ? store[key] as T : fallback)
+  );
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`vs:${key}`, JSON.stringify(value));
+    } catch {}
+  }, [key, value]);
+
+  return [value, setValue] as const;
+}
+
+export default function SplitViewShell() {
+  const [store, setStore] = useState<Record<string, unknown> | null>(null);
+
+  useEffect(() => {
+    setStore(loadAll());
+  }, []);
+
+  if (store === null) return null;
+
+  return (
+    <StoreContext.Provider value={store}>
+      <SplitView />
+    </StoreContext.Provider>
+  );
+}
+
+function SplitView() {
+  const [leftCode, setLeftCode] = usePersist("leftCode", DEFAULT_LEFT);
+  const [rightCode, setRightCode] = usePersist("rightCode", DEFAULT_RIGHT);
+  const [leftLang, setLeftLang] = usePersist<Language>("leftLang", "typescript");
+  const [rightLang, setRightLang] = usePersist<Language>("rightLang", "typescript");
+  const [gradientIndex, setGradientIndex] = usePersist("gradientIndex", 1);
+  const [leftLabel, setLeftLabel] = usePersist("leftLabel", "Before");
+  const [rightLabel, setRightLabel] = usePersist("rightLabel", "After");
   const [leftHtml, setLeftHtml] = useState("");
   const [rightHtml, setRightHtml] = useState("");
   const [exporting, setExporting] = useState(false);
-  const [fontSize, setFontSize] = useState(14);
-  const [padding, setPadding] = useState(24);
-  const [margin, setMargin] = useState(52);
-  const [layout, setLayout] = useState<"side" | "stack">("side");
-  const [grayDots, setGrayDots] = useState(false);
+  const [fontSize, setFontSize] = usePersist("fontSize", 14);
+  const [padding, setPadding] = usePersist("padding", 24);
+  const [margin, setMargin] = usePersist("margin", 52);
+  const [layout, setLayout] = usePersist<"side" | "stack">("layout", "side");
+  const [grayDots, setGrayDots] = usePersist("grayDots", false);
   const exportRef = useRef<HTMLDivElement>(null);
 
   // Highlight code with shiki
