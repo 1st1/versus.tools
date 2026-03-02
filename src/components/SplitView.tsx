@@ -99,8 +99,25 @@ const DEFAULT_RIGHT = `async function getUser(
 
 const SHIKI_THEME = "github-dark";
 
-const MONO_FONT =
-  'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace';
+const FONTS = [
+  {
+    value: "geist",
+    label: "Geist Mono",
+    css: 'var(--font-geist-mono), ui-monospace, monospace',
+  },
+  {
+    value: "roboto",
+    label: "Roboto Mono",
+    css: '"Roboto Mono", ui-monospace, monospace',
+  },
+  {
+    value: "system",
+    label: "System Mono",
+    css: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
+  },
+] as const;
+
+type FontValue = (typeof FONTS)[number]["value"];
 
 function loadAll(): Record<string, unknown> {
   if (typeof window === "undefined") return {};
@@ -163,7 +180,21 @@ function SplitView() {
   const [margin, setMargin] = usePersist("margin", 52);
   const [layout, setLayout] = usePersist<"side" | "stack">("layout", "side");
   const [grayDots, setGrayDots] = usePersist("grayDots", false);
+  const [fontValue, setFontValue] = usePersist<FontValue>("font", "geist");
   const exportRef = useRef<HTMLDivElement>(null);
+  const currentFont = FONTS.find((f) => f.value === fontValue) || FONTS[0];
+
+  // Load Roboto Mono from Google Fonts when selected
+  useEffect(() => {
+    if (fontValue !== "roboto") return;
+    const id = "roboto-mono-font";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600&display=swap";
+    document.head.appendChild(link);
+  }, [fontValue]);
 
   // Highlight code with shiki
   useEffect(() => {
@@ -175,8 +206,11 @@ function SplitView() {
           codeToHtml(rightCode || " ", { lang: rightLang, theme: SHIKI_THEME }),
         ]);
         if (!cancelled) {
-          setLeftHtml(lHtml);
-          setRightHtml(rHtml);
+          // Strip font-family from shiki output so our font choice takes effect
+          const stripFont = (html: string) =>
+            html.replace(/font-family:[^;"']*/g, "");
+          setLeftHtml(stripFont(lHtml));
+          setRightHtml(stripFont(rHtml));
         }
       } catch (e) {
         console.error("Shiki highlighting failed:", e);
@@ -279,6 +313,22 @@ function SplitView() {
       <main className="mx-auto max-w-[1400px] px-6 py-6">
         {/* Controls */}
         <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+          {/* Font */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Font
+            </label>
+            <select
+              value={fontValue}
+              onChange={(e) => setFontValue(e.target.value as FontValue)}
+              className="rounded-md border border-zinc-700/60 bg-zinc-900 px-3 py-1.5 text-sm text-white focus:border-zinc-500 focus:outline-none"
+            >
+              {FONTS.map((f) => (
+                <option key={f.value} value={f.value}>{f.label}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Font Size */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -562,7 +612,7 @@ function SplitView() {
                   <div
                     className="shiki-output"
                     style={{
-                      fontFamily: MONO_FONT,
+                      fontFamily: currentFont.css,
                       fontSize: `${fontSize}px`,
                       lineHeight: 1.7,
                       whiteSpace: "pre",
@@ -604,7 +654,7 @@ function SplitView() {
                 <div
                   className="shiki-output"
                   style={{
-                    fontFamily: MONO_FONT,
+                    fontFamily: currentFont.css,
                     fontSize: `${fontSize}px`,
                     lineHeight: 1.7,
                     whiteSpace: "pre",

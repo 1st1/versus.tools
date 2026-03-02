@@ -26,10 +26,11 @@ body {
   border: none !important;
 }
 
+.shiki-output pre,
 .shiki-output code {
-  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
-    "DejaVu Sans Mono", monospace !important;
-  line-height: 1.7 !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
   background: transparent !important;
 }
 
