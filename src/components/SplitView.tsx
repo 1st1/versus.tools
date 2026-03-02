@@ -498,6 +498,31 @@ export default function SplitView() {
         </div>
 
       </main>
+
+      <footer className="border-t border-zinc-800/60 px-6 py-4">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-center gap-3 text-xs text-zinc-500">
+          <a
+            href="https://github.com/1st1/versus.tools"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-zinc-300"
+          >
+            GitHub
+          </a>
+          <span className="text-zinc-700">·</span>
+          <span>
+            by{" "}
+            <a
+              href="https://x.com/1st1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-zinc-300"
+            >
+              @1st1
+            </a>
+          </span>
+        </div>
+      </footer>
     </div>
   );
 }
