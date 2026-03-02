@@ -35,12 +35,19 @@ interface Gradient {
   dots?: boolean;
   transparent?: boolean;
   windowBg?: string;
+  vercel?: boolean;
 }
 
 const GRADIENTS: Gradient[] = [
   {
     name: "Void",
     css: "linear-gradient(145deg, #000000 0%, #0a0a0a 50%, #000000 100%)",
+  },
+  {
+    name: "Vercel",
+    css: "#000000",
+    vercel: true,
+    windowBg: "#000000",
   },
   {
     name: "Midnight",
@@ -485,9 +492,20 @@ function SplitView() {
                       ? "conic-gradient(#555 25%, #333 25% 50%, #555 50% 75%, #333 75%) 0 0 / 6px 6px"
                       : g.dots
                         ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${g.css}`
-                        : g.css,
+                        : g.vercel
+                          ? "#000"
+                          : g.css,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
-                />
+                >
+                  {g.vercel && (
+                    <svg width="12" height="12" viewBox="0 0 76 65" fill="white">
+                      <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+                    </svg>
+                  )}
+                </button>
               ))}
             </div>
           </div>
@@ -577,15 +595,35 @@ function SplitView() {
                 }}
               />
             )}
+            {/* Vercel grid lines + crosses */}
+            {gradient.vercel && margin > 0 && (() => {
+              const lc = "#333333";
+              const cc = "#888888";
+              const arm = 12;
+              return (
+                <>
+                  {/* Grid lines — full edge to edge */}
+                  <div style={{ position: "absolute", top: margin, left: 0, right: 0, height: 1, background: lc }} />
+                  <div style={{ position: "absolute", bottom: margin, left: 0, right: 0, height: 1, background: lc }} />
+                  <div style={{ position: "absolute", left: margin, top: 0, bottom: 0, width: 1, background: lc }} />
+                  <div style={{ position: "absolute", right: margin, top: 0, bottom: 0, width: 1, background: lc }} />
+                  {/* Top-left cross */}
+                  <div style={{ position: "absolute", zIndex: 3, top: margin, left: margin - arm, width: arm * 2 + 1, height: 1, background: cc }} />
+                  <div style={{ position: "absolute", zIndex: 3, top: margin - arm, left: margin, width: 1, height: arm * 2 + 1, background: cc }} />
+                  {/* Bottom-right cross */}
+                  <div style={{ position: "absolute", zIndex: 3, bottom: margin, left: `calc(100% - ${margin + arm + 1}px)`, width: arm * 2 + 1, height: 1, background: cc }} />
+                  <div style={{ position: "absolute", zIndex: 3, top: `calc(100% - ${margin + arm + 1}px)`, right: margin, width: 1, height: arm * 2 + 1, background: cc }} />
+                </>
+              );
+            })()}
             {/* Window Card */}
             <div
               style={{
                 position: "relative",
                 background: gradient.windowBg || "rgba(13, 17, 23, 0.85)",
-                borderRadius: "14px",
+                borderRadius: gradient.vercel ? "0" : "14px",
                 overflow: "hidden",
-                border: "1px solid rgba(255,255,255,0.07)",
-                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+                border: `1px solid ${gradient.vercel ? "#333333" : "rgba(255,255,255,0.07)"}`,
                 display: "flex",
                 flexDirection: layout === "stack" ? "column" : "row",
               }}
@@ -593,25 +631,27 @@ function SplitView() {
               {/* Left panel */}
               <div style={{ flex: 1 }}>
                 {/* Traffic lights */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "18px 20px 0",
-                  }}
-                >
-                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: grayDots ? "#555" : "#ff5f57" }} />
-                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: grayDots ? "#777" : "#febc2e" }} />
-                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: grayDots ? "#999" : "#28c840" }} />
-                </div>
+                {!gradient.vercel && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "18px 20px 0",
+                    }}
+                  >
+                    <div style={{ width: 12, height: 12, borderRadius: "50%", background: grayDots ? "#555" : "#ff5f57" }} />
+                    <div style={{ width: 12, height: 12, borderRadius: "50%", background: grayDots ? "#777" : "#febc2e" }} />
+                    <div style={{ width: 12, height: 12, borderRadius: "50%", background: grayDots ? "#999" : "#28c840" }} />
+                  </div>
+                )}
                 <div style={{ padding: `${padding}px`, paddingBottom: layout === "stack" ? `${padding / 2}px` : `${padding}px` }}>
                   {leftLabel && (
                     <div
                       style={{
                         fontSize: "12px",
                         fontWeight: 600,
-                        color: "#7d8590",
+                        color: gradient.vercel ? "#444444" : "#7d8590",
                         marginBottom: "14px",
                         textTransform: "uppercase",
                         letterSpacing: "0.05em",
@@ -640,21 +680,21 @@ function SplitView() {
               <div
                 style={layout === "stack" ? {
                   height: "1px",
-                  background: "rgba(255,255,255,0.06)",
+                  background: gradient.vercel ? "#333333" : "rgba(255,255,255,0.06)",
                 } : {
                   width: "1px",
-                  background: "rgba(255,255,255,0.06)",
+                  background: gradient.vercel ? "#333333" : "rgba(255,255,255,0.06)",
                 }}
               />
 
               {/* Right panel */}
-              <div style={{ flex: 1, padding: `${padding}px`, paddingTop: layout === "stack" ? `${padding}px` : `${18 + 12 + padding}px` }}>
+              <div style={{ flex: 1, padding: `${padding}px`, paddingTop: layout === "stack" || gradient.vercel ? `${padding}px` : `${18 + 12 + padding}px` }}>
                 {rightLabel && (
                   <div
                     style={{
                       fontSize: "12px",
                       fontWeight: 600,
-                      color: "#7d8590",
+                      color: gradient.vercel ? "#444444" : "#7d8590",
                       marginBottom: "14px",
                       textTransform: "uppercase",
                       letterSpacing: "0.05em",
