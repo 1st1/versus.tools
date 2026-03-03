@@ -189,6 +189,7 @@ function SplitView() {
   const [grayDots, setGrayDots] = usePersist("grayDots", false);
   const [fontValue, setFontValue] = usePersist<FontValue>("font", "geist");
   const [ligatures, setLigatures] = usePersist("ligatures", true);
+  const [fontWeight, setFontWeight] = usePersist("fontWeight", 400);
   const exportRef = useRef<HTMLDivElement>(null);
   const currentFont = FONTS.find((f) => f.value === fontValue) || FONTS[0];
 
@@ -230,15 +231,15 @@ function SplitView() {
     };
   }, [leftCode, rightCode, leftLang, rightLang]);
 
-  const handleExport = useCallback(async () => {
+  const handleExport = useCallback(async (pixelRatio: number = 2) => {
     if (!exportRef.current) return;
     setExporting(true);
     try {
       const dataUrl = await toPng(exportRef.current, {
-        pixelRatio: 2,
+        pixelRatio,
       });
       const link = document.createElement("a");
-      link.download = "versus-tools.png";
+      link.download = `versus-tools-${pixelRatio}x.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -308,11 +309,18 @@ function SplitView() {
               Copy Image
             </button>
             <button
-              onClick={handleExport}
+              onClick={() => handleExport(2)}
               disabled={exporting}
               className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {exporting ? "Exporting..." : "Export PNG"}
+              {exporting ? "Exporting..." : "Export 2x"}
+            </button>
+            <button
+              onClick={() => handleExport(4)}
+              disabled={exporting}
+              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              Export 4x
             </button>
           </div>
         </div>
@@ -349,6 +357,23 @@ function SplitView() {
             Lig
           </button>
 
+          {/* Font Weight */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Wt
+            </label>
+            <input
+              type="range"
+              min={100}
+              max={900}
+              step={100}
+              value={fontWeight}
+              onChange={(e) => setFontWeight(Number(e.target.value))}
+              className="h-1.5 w-20 cursor-pointer appearance-none rounded-full bg-zinc-700 accent-white"
+            />
+            <span className="text-xs tabular-nums text-zinc-400">{fontWeight}</span>
+          </div>
+
           {/* Font Size */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -364,6 +389,10 @@ function SplitView() {
               <option value={14}>14px</option>
               <option value={15}>15px</option>
               <option value={16}>16px</option>
+              <option value={18}>18px</option>
+              <option value={20}>20px</option>
+              <option value={22}>22px</option>
+              <option value={25}>25px</option>
             </select>
           </div>
 
@@ -579,7 +608,7 @@ function SplitView() {
               background: gradient.css,
               padding: `${margin}px`,
               width: "fit-content",
-              minWidth: layout === "stack" ? "auto" : "900px",
+              minWidth: "auto",
               position: "relative",
             }}
           >
@@ -667,6 +696,7 @@ function SplitView() {
                     style={{
                       fontFamily: currentFont.css,
                       fontVariantLigatures: ligatures ? "normal" : "none",
+                      fontWeight,
                       fontSize: `${fontSize}px`,
                       lineHeight: 1.7,
                       whiteSpace: "pre",
@@ -710,6 +740,7 @@ function SplitView() {
                   style={{
                     fontFamily: currentFont.css,
                     fontVariantLigatures: ligatures ? "normal" : "none",
+                    fontWeight,
                     fontSize: `${fontSize}px`,
                     lineHeight: 1.7,
                     whiteSpace: "pre",
