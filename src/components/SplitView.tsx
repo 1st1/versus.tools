@@ -43,95 +43,113 @@ type ThemeVariant =
   | { type: "vercel" }
   | { type: "transparent" };
 
+interface Chrome {
+  label: string;
+  gridLine: string;
+  gridCross: string;
+  windowBorder: string;
+  windowDivider: string;
+}
+
 interface Theme {
   name: string;
-  css: string;
+  background: string;
   colorScheme: ColorScheme;
   variant: ThemeVariant;
   windowBg?: string;
+  chrome: Chrome;
 }
 
-function chromeColors(scheme: ColorScheme, variant: ThemeVariant) {
-  const isLight = scheme === "light";
-  const isVercel = variant.type === "vercel";
+const DARK_CHROME: Chrome = {
+  label: "#7d8590",
+  gridLine: "#333333",
+  gridCross: "#888888",
+  windowBorder: "rgba(255,255,255,0.07)",
+  windowDivider: "rgba(255,255,255,0.06)",
+};
 
-  const gridLine = isLight ? "#e0e0e0" : "#333333";
-  const gridCross = isLight ? "#999999" : "#888888";
-  const label = isLight ? "#7d8590" : "#7d8590";
-
-  return {
-    label,
-    gridLine,
-    gridCross,
-    windowBorder: isVercel ? gridLine : (isLight ? "#d0d0d0" : "rgba(255,255,255,0.07)"),
-    windowDivider: isVercel ? gridLine : (isLight ? "#d0d0d0" : "rgba(255,255,255,0.06)"),
-  };
-}
+const LIGHT_CHROME: Chrome = {
+  label: "#7d8590",
+  gridLine: "#e0e0e0",
+  gridCross: "#999999",
+  windowBorder: "#d0d0d0",
+  windowDivider: "#d0d0d0",
+};
 
 const THEMES: Theme[] = [
   {
     name: "Void",
-    css: "linear-gradient(145deg, #000000 0%, #0a0a0a 50%, #000000 100%)",
+    background: "linear-gradient(145deg, #000000 0%, #0a0a0a 50%, #000000 100%)",
     colorScheme: "dark",
     variant: { type: "gradient" },
+    chrome: DARK_CHROME,
   },
   {
     name: "Vercel",
-    css: "#000000",
+    background: "#000000",
     colorScheme: "dark",
     variant: { type: "vercel" },
     windowBg: "#000000",
+    chrome: { ...DARK_CHROME, windowBorder: "#333333", windowDivider: "#333333" },
   },
   {
     name: "Vercel Light",
-    css: "#ffffff",
+    background: "#ffffff",
     colorScheme: "light",
     variant: { type: "vercel" },
     windowBg: "#ffffff",
+    chrome: { ...LIGHT_CHROME, windowBorder: "#e0e0e0", windowDivider: "#e0e0e0" },
   },
   {
     name: "Midnight",
-    css: "linear-gradient(145deg, #0a0a0a 0%, #1a1a2e 50%, #16162a 100%)",
+    background: "linear-gradient(145deg, #0a0a0a 0%, #1a1a2e 50%, #16162a 100%)",
     colorScheme: "dark",
     variant: { type: "gradient" },
+    chrome: DARK_CHROME,
   },
   {
     name: "Dots",
-    css: "#111111",
+    background: "radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px) 0 0 / 24px 24px, #111111",
     colorScheme: "dark",
     variant: { type: "dots" },
+    chrome: DARK_CHROME,
   },
   {
     name: "Charcoal",
-    css: "linear-gradient(145deg, #1c1c1c 0%, #2d2d2d 50%, #1c1c1c 100%)",
+    background: "linear-gradient(145deg, #1c1c1c 0%, #2d2d2d 50%, #1c1c1c 100%)",
     colorScheme: "dark",
     variant: { type: "gradient" },
+    chrome: DARK_CHROME,
   },
   {
     name: "Sunset",
-    css: "linear-gradient(145deg, #b91c1c 0%, #dc2626 30%, #ea580c 60%, #f59e0b 100%)",
+    background: "linear-gradient(145deg, #b91c1c 0%, #dc2626 30%, #ea580c 60%, #f59e0b 100%)",
     colorScheme: "dark",
     variant: { type: "gradient" },
+    chrome: DARK_CHROME,
   },
   {
     name: "Ocean",
-    css: "linear-gradient(145deg, #1e3a5f 0%, #0e7490 40%, #0d9488 70%, #10b981 100%)",
+    background: "linear-gradient(145deg, #1e3a5f 0%, #0e7490 40%, #0d9488 70%, #10b981 100%)",
     colorScheme: "dark",
     variant: { type: "gradient" },
+    chrome: DARK_CHROME,
   },
   {
     name: "Snow",
-    css: "linear-gradient(145deg, #ffffff 0%, #f9fafb 50%, #ffffff 100%)",
+    background: "linear-gradient(145deg, #ffffff 0%, #f9fafb 50%, #ffffff 100%)",
     colorScheme: "light",
     variant: { type: "gradient" },
     windowBg: "rgba(25, 25, 0, 0.05)",
+    chrome: LIGHT_CHROME,
   },
   {
     name: "Transparent",
-    css: "transparent",
+    background: "transparent",
     colorScheme: "dark",
     variant: { type: "transparent" },
     windowBg: "rgba(5, 5, 5, 0.95)",
+    chrome: DARK_CHROME,
   },
 ];
 
@@ -328,7 +346,7 @@ function SplitView() {
   };
 
   const theme = THEMES[themeIndex] || THEMES[0];
-  const chrome = chromeColors(theme.colorScheme, theme.variant);
+  const chrome = theme.chrome;
   const shikiTheme = theme.colorScheme === "light" ? SHIKI_THEME_LIGHT : SHIKI_THEME_DARK;
 
   // Highlight code with shiki
@@ -601,13 +619,9 @@ function SplitView() {
                       : "ring-1 ring-zinc-600 hover:ring-zinc-400"
                   }`}
                   style={{
-                    background: t.variant.type === "transparent"
+                    background: t.background === "transparent"
                       ? "conic-gradient(#555 25%, #333 25% 50%, #555 50% 75%, #333 75%) 0 0 / 6px 6px"
-                      : t.variant.type === "dots"
-                        ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${t.css}`
-                        : t.variant.type === "vercel"
-                          ? (t.colorScheme === "light" ? "#fff" : "#000")
-                          : t.css,
+                      : t.background,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -717,25 +731,13 @@ function SplitView() {
           <div
             ref={exportRef}
             style={{
-              background: theme.css,
+              background: theme.background,
               padding: `${margin}px`,
               width: "fit-content",
               minWidth: "auto",
               position: "relative",
             }}
           >
-            {/* Dot pattern overlay */}
-            {theme.variant.type === "dots" && (
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage:
-                    "radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px)",
-                  backgroundSize: "24px 24px",
-                }}
-              />
-            )}
             {/* Vercel grid lines + crosses */}
             {theme.variant.type === "vercel" && margin > 0 && (() => {
               const lc = chrome.gridLine;
