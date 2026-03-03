@@ -36,6 +36,7 @@ interface Gradient {
   transparent?: boolean;
   windowBg?: string;
   vercel?: boolean;
+  light?: boolean;
 }
 
 const GRADIENTS: Gradient[] = [
@@ -48,6 +49,13 @@ const GRADIENTS: Gradient[] = [
     css: "#000000",
     vercel: true,
     windowBg: "#000000",
+  },
+  {
+    name: "Vercel Light",
+    css: "#ffffff",
+    vercel: true,
+    windowBg: "#ffffff",
+    light: true,
   },
   {
     name: "Midnight",
@@ -73,6 +81,7 @@ const GRADIENTS: Gradient[] = [
   {
     name: "Snow",
     css: "linear-gradient(145deg, #ffffff 0%, #f9fafb 50%, #ffffff 100%)",
+    light: true,
   },
   {
     name: "Transparent",
@@ -96,7 +105,8 @@ const DEFAULT_RIGHT = `async function getUser(
   return res.json() as Promise<User>;
 }`;
 
-const SHIKI_THEME = "github-dark";
+const SHIKI_THEME_DARK = "github-dark";
+const SHIKI_THEME_LIGHT = "github-light";
 
 const FONTS = [
   {
@@ -173,6 +183,8 @@ function SplitView() {
   const [rightLabel, setRightLabel] = usePersist("rightLabel", "After");
   const [leftHtml, setLeftHtml] = useState("");
   const [rightHtml, setRightHtml] = useState("");
+  const [leftEditorHtml, setLeftEditorHtml] = useState("");
+  const [rightEditorHtml, setRightEditorHtml] = useState("");
   const [exporting, setExporting] = useState(false);
   const [fontSize, setFontSize] = usePersist("fontSize", 14);
   const [padding, setPadding] = usePersist("padding", 24);
@@ -196,32 +208,6 @@ function SplitView() {
     link.href = "https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600&display=swap";
     document.head.appendChild(link);
   }, [fontValue]);
-
-  // Highlight code with shiki
-  useEffect(() => {
-    let cancelled = false;
-    async function highlight() {
-      try {
-        const [lHtml, rHtml] = await Promise.all([
-          codeToHtml(leftCode || " ", { lang: leftLang, theme: SHIKI_THEME }),
-          codeToHtml(rightCode || " ", { lang: rightLang, theme: SHIKI_THEME }),
-        ]);
-        if (!cancelled) {
-          // Strip font-family from shiki output so our font choice takes effect
-          const stripFont = (html: string) =>
-            html.replace(/font-family:[^;"']*/g, "");
-          setLeftHtml(stripFont(lHtml));
-          setRightHtml(stripFont(rHtml));
-        }
-      } catch (e) {
-        console.error("Shiki highlighting failed:", e);
-      }
-    }
-    highlight();
-    return () => {
-      cancelled = true;
-    };
-  }, [leftCode, rightCode, leftLang, rightLang]);
 
   const handleExport = useCallback(async (pixelRatio: number = 2) => {
     if (!exportRef.current) return;
@@ -262,6 +248,47 @@ function SplitView() {
   };
 
   const gradient = GRADIENTS[gradientIndex] || GRADIENTS[0];
+  const isVercelLight = gradient.vercel && gradient.windowBg === "#ffffff";
+  const shikiTheme = gradient.light ? SHIKI_THEME_LIGHT : SHIKI_THEME_DARK;
+
+  // Highlight code with shiki
+  useEffect(() => {
+    let cancelled = false;
+    const stripFont = (html: string) =>
+      html.replace(/font-family:[^;"']*/g, "");
+    async function highlight() {
+      try {
+        const themes = shikiTheme === SHIKI_THEME_DARK
+          ? [shikiTheme]
+          : [SHIKI_THEME_DARK, shikiTheme];
+        const results = await Promise.all(
+          themes.flatMap((theme) => [
+            codeToHtml(leftCode || " ", { lang: leftLang, theme }),
+            codeToHtml(rightCode || " ", { lang: rightLang, theme }),
+          ])
+        );
+        if (!cancelled) {
+          if (themes.length === 1) {
+            setLeftEditorHtml(stripFont(results[0]));
+            setRightEditorHtml(stripFont(results[1]));
+            setLeftHtml(stripFont(results[0]));
+            setRightHtml(stripFont(results[1]));
+          } else {
+            setLeftEditorHtml(stripFont(results[0]));
+            setRightEditorHtml(stripFont(results[1]));
+            setLeftHtml(stripFont(results[2]));
+            setRightHtml(stripFont(results[3]));
+          }
+        }
+      } catch (e) {
+        console.error("Shiki highlighting failed:", e);
+      }
+    }
+    highlight();
+    return () => {
+      cancelled = true;
+    };
+  }, [leftCode, rightCode, leftLang, rightLang, shikiTheme]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -469,7 +496,7 @@ function SplitView() {
                       : g.dots
                         ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${g.css}`
                         : g.vercel
-                          ? "#000"
+                          ? (g.windowBg === "#ffffff" ? "#fff" : "#000")
                           : g.css,
                     display: "flex",
                     alignItems: "center",
@@ -477,7 +504,7 @@ function SplitView() {
                   }}
                 >
                   {g.vercel && (
-                    <svg width="12" height="12" viewBox="0 0 76 65" fill="white">
+                    <svg width="12" height="12" viewBox="0 0 76 65" fill={g.windowBg === "#ffffff" ? "black" : "white"}>
                       <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
                     </svg>
                   )}
@@ -511,7 +538,7 @@ function SplitView() {
               <div
                 className="shiki-output pointer-events-none absolute inset-0 overflow-auto p-4 font-mono text-sm leading-relaxed"
                 aria-hidden="true"
-                dangerouslySetInnerHTML={{ __html: leftHtml }}
+                dangerouslySetInnerHTML={{ __html: leftEditorHtml }}
               />
               <textarea
                 value={leftCode}
@@ -549,7 +576,7 @@ function SplitView() {
               <div
                 className="shiki-output pointer-events-none absolute inset-0 overflow-auto p-4 font-mono text-sm leading-relaxed"
                 aria-hidden="true"
-                dangerouslySetInnerHTML={{ __html: rightHtml }}
+                dangerouslySetInnerHTML={{ __html: rightEditorHtml }}
               />
               <textarea
                 value={rightCode}
@@ -601,8 +628,8 @@ function SplitView() {
             )}
             {/* Vercel grid lines + crosses */}
             {gradient.vercel && margin > 0 && (() => {
-              const lc = "#333333";
-              const cc = "#888888";
+              const lc = isVercelLight ? "#e0e0e0" : "#333333";
+              const cc = isVercelLight ? "#999999" : "#888888";
               const arm = 12;
               return (
                 <>
@@ -627,7 +654,7 @@ function SplitView() {
                 background: gradient.windowBg || "rgba(13, 17, 23, 0.85)",
                 borderRadius: gradient.vercel ? "0" : "14px",
                 overflow: "hidden",
-                border: `1px solid ${gradient.vercel ? "#333333" : "rgba(255,255,255,0.07)"}`,
+                border: `1px solid ${gradient.vercel ? (isVercelLight ? "#e0e0e0" : "#333333") : "rgba(255,255,255,0.07)"}`,
                 display: "flex",
                 flexDirection: layout === "stack" ? "column" : "row",
               }}
@@ -655,7 +682,7 @@ function SplitView() {
                       style={{
                         fontSize: "12px",
                         fontWeight: 600,
-                        color: gradient.vercel ? "#444444" : "#7d8590",
+                        color: gradient.vercel ? (isVercelLight ? "#c0c0c0" : "#444444") : "#7d8590",
                         marginBottom: "14px",
                         textTransform: "uppercase",
                         letterSpacing: "0.05em",
@@ -685,10 +712,10 @@ function SplitView() {
               <div
                 style={layout === "stack" ? {
                   height: "1px",
-                  background: gradient.vercel ? "#333333" : "rgba(255,255,255,0.06)",
+                  background: gradient.vercel ? (isVercelLight ? "#e0e0e0" : "#333333") : "rgba(255,255,255,0.06)",
                 } : {
                   width: "1px",
-                  background: gradient.vercel ? "#333333" : "rgba(255,255,255,0.06)",
+                  background: gradient.vercel ? (isVercelLight ? "#e0e0e0" : "#333333") : "rgba(255,255,255,0.06)",
                 }}
               />
 
@@ -699,7 +726,7 @@ function SplitView() {
                     style={{
                       fontSize: "12px",
                       fontWeight: 600,
-                      color: gradient.vercel ? "#444444" : "#7d8590",
+                      color: gradient.vercel ? (isVercelLight ? "#c0c0c0" : "#444444") : "#7d8590",
                       marginBottom: "14px",
                       textTransform: "uppercase",
                       letterSpacing: "0.05em",
