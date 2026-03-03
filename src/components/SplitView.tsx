@@ -91,10 +91,17 @@ const GRADIENTS: Gradient[] = [
     lightBg: true,
   },
   {
-    name: "Transparent",
+    name: "Transparent Dark",
     css: "transparent",
     transparent: true,
     windowBg: "rgba(5, 5, 5, 0.95)",
+  },
+  {
+    name: "Transparent Light",
+    css: "transparent",
+    transparent: true,
+    light: true,
+    windowBg: "rgba(255, 255, 255, 0.95)",
   },
 ];
 
@@ -637,10 +644,22 @@ function SplitView() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    overflow: "hidden",
+                    position: "relative",
                   }}
                 >
+                  {g.transparent && (
+                    <div style={{
+                      position: "absolute",
+                      top: 0,
+                      right: 0,
+                      width: "50%",
+                      height: "100%",
+                      background: g.light ? "#e8e8e8" : "#222",
+                    }} />
+                  )}
                   {g.vercel && (
-                    <svg width="12" height="12" viewBox="0 0 76 65" fill={g.windowBg === "#ffffff" ? "black" : "white"}>
+                    <svg width="12" height="12" viewBox="0 0 76 65" fill={g.windowBg === "#ffffff" ? "black" : "white"} style={{ position: "relative", zIndex: 1 }}>
                       <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
                     </svg>
                   )}
