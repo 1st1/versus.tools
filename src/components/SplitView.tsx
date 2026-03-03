@@ -63,20 +63,12 @@ const GRADIENTS: Gradient[] = [
     css: "linear-gradient(145deg, #1c1c1c 0%, #2d2d2d 50%, #1c1c1c 100%)",
   },
   {
-    name: "Storm",
-    css: "linear-gradient(145deg, #374151 0%, #1f2937 50%, #374151 100%)",
+    name: "Sunset",
+    css: "linear-gradient(145deg, #b91c1c 0%, #dc2626 30%, #ea580c 60%, #f59e0b 100%)",
   },
   {
-    name: "Fog",
-    css: "linear-gradient(145deg, #9ca3af 0%, #6b7280 50%, #9ca3af 100%)",
-  },
-  {
-    name: "Silver",
-    css: "linear-gradient(145deg, #d1d5db 0%, #e5e7eb 50%, #d1d5db 100%)",
-  },
-  {
-    name: "Pearl",
-    css: "linear-gradient(145deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%)",
+    name: "Ocean",
+    css: "linear-gradient(145deg, #1e3a5f 0%, #0e7490 40%, #0d9488 70%, #10b981 100%)",
   },
   {
     name: "Snow",
@@ -288,7 +280,7 @@ function SplitView() {
     }
   };
 
-  const gradient = GRADIENTS[gradientIndex];
+  const gradient = GRADIENTS[gradientIndex] || GRADIENTS[0];
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
