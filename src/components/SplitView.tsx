@@ -35,63 +35,102 @@ const LANGUAGES = [
 
 type Language = (typeof LANGUAGES)[number]["value"];
 
-interface Gradient {
+type ColorScheme = "light" | "dark";
+
+type ThemeVariant =
+  | { type: "gradient" }
+  | { type: "dots" }
+  | { type: "vercel" }
+  | { type: "transparent" };
+
+interface Theme {
   name: string;
   css: string;
-  dots?: boolean;
-  transparent?: boolean;
+  colorScheme: ColorScheme;
+  variant: ThemeVariant;
   windowBg?: string;
-  vercel?: boolean;
-  light?: boolean;
 }
 
-const GRADIENTS: Gradient[] = [
+function chromeColors(scheme: ColorScheme, variant: ThemeVariant) {
+  const isLight = scheme === "light";
+  const isVercel = variant.type === "vercel";
+
+  const gridLine = isLight ? "#e0e0e0" : "#333333";
+  const gridCross = isLight ? "#999999" : "#888888";
+  const label = isLight ? "#7d8590" : "#7d8590";
+
+  return {
+    label,
+    gridLine,
+    gridCross,
+    windowBorder: isVercel ? gridLine : (isLight ? "#d0d0d0" : "rgba(255,255,255,0.07)"),
+    windowDivider: isVercel ? gridLine : (isLight ? "#d0d0d0" : "rgba(255,255,255,0.06)"),
+  };
+}
+
+const THEMES: Theme[] = [
   {
     name: "Void",
     css: "linear-gradient(145deg, #000000 0%, #0a0a0a 50%, #000000 100%)",
+    colorScheme: "dark",
+    variant: { type: "gradient" },
   },
   {
     name: "Vercel",
     css: "#000000",
-    vercel: true,
+    colorScheme: "dark",
+    variant: { type: "vercel" },
     windowBg: "#000000",
   },
   {
     name: "Vercel Light",
     css: "#ffffff",
-    vercel: true,
+    colorScheme: "light",
+    variant: { type: "vercel" },
     windowBg: "#ffffff",
-    light: true,
   },
   {
     name: "Midnight",
     css: "linear-gradient(145deg, #0a0a0a 0%, #1a1a2e 50%, #16162a 100%)",
+    colorScheme: "dark",
+    variant: { type: "gradient" },
   },
   {
     name: "Dots",
     css: "#111111",
-    dots: true,
+    colorScheme: "dark",
+    variant: { type: "dots" },
   },
   {
     name: "Charcoal",
     css: "linear-gradient(145deg, #1c1c1c 0%, #2d2d2d 50%, #1c1c1c 100%)",
+    colorScheme: "dark",
+    variant: { type: "gradient" },
   },
   {
     name: "Sunset",
     css: "linear-gradient(145deg, #b91c1c 0%, #dc2626 30%, #ea580c 60%, #f59e0b 100%)",
+    colorScheme: "dark",
+    variant: { type: "gradient" },
   },
   {
     name: "Ocean",
     css: "linear-gradient(145deg, #1e3a5f 0%, #0e7490 40%, #0d9488 70%, #10b981 100%)",
+    colorScheme: "dark",
+    variant: { type: "gradient" },
   },
   {
     name: "Snow",
     css: "linear-gradient(145deg, #ffffff 0%, #f9fafb 50%, #ffffff 100%)",
+    colorScheme: "light",
+    variant: { type: "gradient" },
+    windowBg: "rgba(25, 25, 0, 0.05)",
   },
   {
     name: "Transparent",
     css: "transparent",
-    transparent: true,
+    colorScheme: "dark",
+    variant: { type: "transparent" },
     windowBg: "rgba(5, 5, 5, 0.95)",
   },
 ];
@@ -183,7 +222,7 @@ function SplitView() {
   const [rightCode, setRightCode] = usePersist("rightCode", DEFAULT_RIGHT);
   const [leftLang, setLeftLang] = usePersist<Language>("leftLang", "typescript");
   const [rightLang, setRightLang] = usePersist<Language>("rightLang", "typescript");
-  const [gradientIndex, setGradientIndex] = usePersist("gradientIndex", 0);
+  const [themeIndex, setThemeIndex] = usePersist("gradientIndex", 0);
   const [leftLabel, setLeftLabel] = usePersist("leftLabel", "Before");
   const [rightLabel, setRightLabel] = usePersist("rightLabel", "After");
   const [leftHtml, setLeftHtml] = useState("");
@@ -288,9 +327,9 @@ function SplitView() {
     }
   };
 
-  const gradient = GRADIENTS[gradientIndex] || GRADIENTS[0];
-  const isVercelLight = gradient.vercel && gradient.windowBg === "#ffffff";
-  const shikiTheme = gradient.light ? SHIKI_THEME_LIGHT : SHIKI_THEME_DARK;
+  const theme = THEMES[themeIndex] || THEMES[0];
+  const chrome = chromeColors(theme.colorScheme, theme.variant);
+  const shikiTheme = theme.colorScheme === "light" ? SHIKI_THEME_LIGHT : SHIKI_THEME_DARK;
 
   // Highlight code with shiki
   useEffect(() => {
@@ -545,37 +584,37 @@ function SplitView() {
             Gray
           </button>
 
-          {/* Gradients */}
+          {/* Themes */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
               BG
             </label>
             <div className="flex gap-1.5">
-              {GRADIENTS.map((g, i) => (
+              {THEMES.map((t, i) => (
                 <button
-                  key={g.name}
-                  onClick={() => setGradientIndex(i)}
-                  title={g.name}
+                  key={t.name}
+                  onClick={() => setThemeIndex(i)}
+                  title={t.name}
                   className={`h-6 w-6 rounded-full transition-all ${
-                    i === gradientIndex
+                    i === themeIndex
                       ? "ring-2 ring-white ring-offset-2 ring-offset-zinc-950"
                       : "ring-1 ring-zinc-600 hover:ring-zinc-400"
                   }`}
                   style={{
-                    background: g.transparent
+                    background: t.variant.type === "transparent"
                       ? "conic-gradient(#555 25%, #333 25% 50%, #555 50% 75%, #333 75%) 0 0 / 6px 6px"
-                      : g.dots
-                        ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${g.css}`
-                        : g.vercel
-                          ? (g.windowBg === "#ffffff" ? "#fff" : "#000")
-                          : g.css,
+                      : t.variant.type === "dots"
+                        ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${t.css}`
+                        : t.variant.type === "vercel"
+                          ? (t.colorScheme === "light" ? "#fff" : "#000")
+                          : t.css,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  {g.vercel && (
-                    <svg width="12" height="12" viewBox="0 0 76 65" fill={g.windowBg === "#ffffff" ? "black" : "white"}>
+                  {t.variant.type === "vercel" && (
+                    <svg width="12" height="12" viewBox="0 0 76 65" fill={t.colorScheme === "light" ? "black" : "white"}>
                       <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
                     </svg>
                   )}
@@ -678,7 +717,7 @@ function SplitView() {
           <div
             ref={exportRef}
             style={{
-              background: gradient.css,
+              background: theme.css,
               padding: `${margin}px`,
               width: "fit-content",
               minWidth: "auto",
@@ -686,7 +725,7 @@ function SplitView() {
             }}
           >
             {/* Dot pattern overlay */}
-            {gradient.dots && (
+            {theme.variant.type === "dots" && (
               <div
                 style={{
                   position: "absolute",
@@ -698,9 +737,9 @@ function SplitView() {
               />
             )}
             {/* Vercel grid lines + crosses */}
-            {gradient.vercel && margin > 0 && (() => {
-              const lc = isVercelLight ? "#e0e0e0" : "#333333";
-              const cc = isVercelLight ? "#999999" : "#888888";
+            {theme.variant.type === "vercel" && margin > 0 && (() => {
+              const lc = chrome.gridLine;
+              const cc = chrome.gridCross;
               const arm = 12;
               return (
                 <>
@@ -722,10 +761,10 @@ function SplitView() {
             <div
               style={{
                 position: "relative",
-                background: gradient.windowBg || "rgba(13, 17, 23, 0.85)",
-                borderRadius: gradient.vercel ? "0" : "14px",
+                background: theme.windowBg || "rgba(13, 17, 23, 0.85)",
+                borderRadius: theme.variant.type === "vercel" ? "0" : "14px",
                 overflow: "hidden",
-                border: `1px solid ${gradient.vercel ? (isVercelLight ? "#e0e0e0" : "#333333") : "rgba(255,255,255,0.07)"}`,
+                border: `1px solid ${chrome.windowBorder}`,
                 display: "flex",
                 flexDirection: layout === "stack" ? "column" : "row",
               }}
@@ -733,13 +772,12 @@ function SplitView() {
               {diffMode && diffResult && layout === "stack" ? (
                 /* Unified diff: single panel */
                 <div style={{ flex: 1 }}>
-                  {!gradient.vercel && <TrafficLights grayDots={grayDots} />}
+                  {theme.variant.type !== "vercel" && <TrafficLights grayDots={grayDots} />}
                   <div style={{ padding: `${padding}px` }}>
                     {(leftLabel || rightLabel) && (
                       <PanelLabel
                         label={`${leftLabel}${leftLabel && rightLabel ? " → " : ""}${rightLabel}`}
-                        vercel={gradient.vercel}
-                        light={gradient.light}
+                        color={chrome.label}
                       />
                     )}
                     <DiffRender lines={diffResult.unified} fontSize={fontSize}
@@ -750,12 +788,12 @@ function SplitView() {
                 /* Two panels: split diff OR normal */
                 <>
                   <div style={{ flex: 1 }}>
-                    {!gradient.vercel && <TrafficLights grayDots={grayDots} />}
+                    {theme.variant.type !== "vercel" && <TrafficLights grayDots={grayDots} />}
                     <div style={{
                       padding: `${padding}px`,
                       paddingBottom: !diffMode && layout === "stack" ? `${padding / 2}px` : `${padding}px`,
                     }}>
-                      {leftLabel && <PanelLabel label={leftLabel} vercel={gradient.vercel} light={gradient.light} />}
+                      {leftLabel && <PanelLabel label={leftLabel} color={chrome.label} />}
                       {diffMode && diffResult
                         ? <DiffRender lines={diffResult.left} fontSize={fontSize}
                             fontFamily={currentFont.css} fontWeight={fontWeight} ligatures={ligatures} />
@@ -766,15 +804,15 @@ function SplitView() {
 
                   {/* Divider */}
                   <div style={layout === "stack"
-                    ? { height: "1px", background: gradient.vercel ? (isVercelLight ? "#e0e0e0" : "#333333") : "rgba(255,255,255,0.06)" }
-                    : { width: "1px", background: gradient.vercel ? (isVercelLight ? "#e0e0e0" : "#333333") : "rgba(255,255,255,0.06)" }
+                    ? { height: "1px", background: chrome.windowDivider }
+                    : { width: "1px", background: chrome.windowDivider }
                   } />
 
                   <div style={{
                     flex: 1, padding: `${padding}px`,
-                    paddingTop: layout === "stack" || gradient.vercel ? `${padding}px` : `${18 + 12 + padding}px`,
+                    paddingTop: layout === "stack" || theme.variant.type === "vercel" ? `${padding}px` : `${18 + 12 + padding}px`,
                   }}>
-                    {rightLabel && <PanelLabel label={rightLabel} vercel={gradient.vercel} light={gradient.light} />}
+                    {rightLabel && <PanelLabel label={rightLabel} color={chrome.label} />}
                     {diffMode && diffResult
                       ? <DiffRender lines={diffResult.right} fontSize={fontSize}
                           fontFamily={currentFont.css} fontWeight={fontWeight} ligatures={ligatures} />
