@@ -610,8 +610,47 @@ function SplitView() {
             Diff
           </button>
 
-          {/* Window chrome */}
+          {/* Gradients */}
           <div className="flex items-center gap-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              BG
+            </label>
+            <div className="flex gap-1.5">
+              {GRADIENTS.map((g, i) => (
+                <button
+                  key={g.name}
+                  onClick={() => setGradientIndex(i)}
+                  title={g.name}
+                  className={`h-6 w-6 rounded-full transition-all ${
+                    i === gradientIndex
+                      ? "ring-2 ring-white ring-offset-2 ring-offset-zinc-950"
+                      : "ring-1 ring-zinc-600 hover:ring-zinc-400"
+                  }`}
+                  style={{
+                    background: g.transparent
+                      ? "conic-gradient(#555 25%, #333 25% 50%, #555 50% 75%, #333 75%) 0 0 / 6px 6px"
+                      : g.dots
+                        ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${g.css}`
+                        : g.vercel
+                          ? (g.windowBg === "#ffffff" ? "#fff" : "#000")
+                          : g.css,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {g.vercel && (
+                    <svg width="12" height="12" viewBox="0 0 76 65" fill={g.windowBg === "#ffffff" ? "black" : "white"}>
+                      <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Window chrome */}
+          <div className={`flex items-center gap-2 ${gradient.vercel ? "pointer-events-none opacity-30" : ""}`}>
             <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
               Chrome
             </label>
@@ -661,45 +700,6 @@ function SplitView() {
               >
                 Bare
               </button>
-            </div>
-          </div>
-
-          {/* Gradients */}
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-              BG
-            </label>
-            <div className="flex gap-1.5">
-              {GRADIENTS.map((g, i) => (
-                <button
-                  key={g.name}
-                  onClick={() => setGradientIndex(i)}
-                  title={g.name}
-                  className={`h-6 w-6 rounded-full transition-all ${
-                    i === gradientIndex
-                      ? "ring-2 ring-white ring-offset-2 ring-offset-zinc-950"
-                      : "ring-1 ring-zinc-600 hover:ring-zinc-400"
-                  }`}
-                  style={{
-                    background: g.transparent
-                      ? "conic-gradient(#555 25%, #333 25% 50%, #555 50% 75%, #333 75%) 0 0 / 6px 6px"
-                      : g.dots
-                        ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${g.css}`
-                        : g.vercel
-                          ? (g.windowBg === "#ffffff" ? "#fff" : "#000")
-                          : g.css,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {g.vercel && (
-                    <svg width="12" height="12" viewBox="0 0 76 65" fill={g.windowBg === "#ffffff" ? "black" : "white"}>
-                      <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
-                    </svg>
-                  )}
-                </button>
-              ))}
             </div>
           </div>
         </div>
