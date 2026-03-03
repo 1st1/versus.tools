@@ -52,19 +52,6 @@ const GRADIENTS: Gradient[] = [
     css: "linear-gradient(145deg, #000000 0%, #0a0a0a 50%, #000000 100%)",
   },
   {
-    name: "Vercel",
-    css: "#000000",
-    vercel: true,
-    windowBg: "#000000",
-  },
-  {
-    name: "Vercel Light",
-    css: "#ffffff",
-    vercel: true,
-    windowBg: "#ffffff",
-    light: true,
-  },
-  {
     name: "Midnight",
     css: "linear-gradient(145deg, #0a0a0a 0%, #1a1a2e 50%, #16162a 100%)",
   },
@@ -102,6 +89,19 @@ const GRADIENTS: Gradient[] = [
     transparent: true,
     light: true,
     windowBg: "rgba(255, 255, 255, 0.95)",
+  },
+  {
+    name: "Vercel",
+    css: "#000000",
+    vercel: true,
+    windowBg: "#000000",
+  },
+  {
+    name: "Vercel Light",
+    css: "#ffffff",
+    vercel: true,
+    windowBg: "#ffffff",
+    light: true,
   },
 ];
 
@@ -804,11 +804,10 @@ function SplitView() {
         </div>
 
         {/* Preview */}
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3">
           <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
             Preview
           </span>
-          <span className="text-xs text-zinc-600">2x retina export</span>
         </div>
 
         <div
