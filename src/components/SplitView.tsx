@@ -537,7 +537,7 @@ function SplitView() {
             <div className="relative" ref={historyMenuRef}>
               <button
                 onClick={() => setHistoryOpen(!historyOpen)}
-                className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-2.5 py-1.5 md:px-4 md:py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-2.5 py-1 md:px-4 md:py-1.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
               >
                 History
                 <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="ml-0.5">
@@ -575,7 +575,7 @@ function SplitView() {
               <button
                 onClick={() => setExportOpen(!exportOpen)}
                 disabled={exporting}
-                className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 md:px-4 md:py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 md:px-4 md:py-1.5 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {exporting ? "Exporting..." : "Export"}
                 <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="ml-0.5">
@@ -642,7 +642,7 @@ function SplitView() {
           {/* Ligatures */}
           <button
             onClick={() => setLigatures(!ligatures)}
-            className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-md border px-3 py-1 text-sm font-medium transition-colors ${
               ligatures
                 ? "border-zinc-600 bg-zinc-700 text-white"
                 : "border-zinc-700/60 bg-zinc-900 text-zinc-400 hover:text-zinc-200"
@@ -740,7 +740,7 @@ function SplitView() {
                 <button
                   key={value}
                   onClick={() => setMode(value)}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`px-3 py-1 text-sm font-medium transition-colors ${
                     mode === value
                       ? "bg-zinc-700 text-white"
                       : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
@@ -761,7 +761,7 @@ function SplitView() {
               <button
                 onClick={() => setLayout("side")}
                 disabled={singleMode}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`px-3 py-1 text-sm font-medium transition-colors ${
                   layout === "side"
                     ? "bg-zinc-700 text-white"
                     : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
@@ -772,7 +772,7 @@ function SplitView() {
               <button
                 onClick={() => setLayout("stack")}
                 disabled={singleMode}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`px-3 py-1 text-sm font-medium transition-colors ${
                   layout === "stack"
                     ? "bg-zinc-700 text-white"
                     : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
@@ -842,7 +842,7 @@ function SplitView() {
             <div className="flex overflow-hidden rounded-md border border-zinc-700/60">
               <button
                 onClick={() => setChrome("color")}
-                className={`flex items-center gap-1 px-2.5 py-1.5 text-sm transition-colors ${
+                className={`flex items-center gap-1 px-2.5 py-1 text-sm transition-colors ${
                   chrome === "color" ? "bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
                 }`}
               >
@@ -854,7 +854,7 @@ function SplitView() {
               </button>
               <button
                 onClick={() => setChrome("gray")}
-                className={`flex items-center gap-1 px-2.5 py-1.5 text-sm transition-colors ${
+                className={`flex items-center gap-1 px-2.5 py-1 text-sm transition-colors ${
                   chrome === "gray" ? "bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
                 }`}
               >
@@ -866,7 +866,7 @@ function SplitView() {
               </button>
               <button
                 onClick={() => setChrome("none")}
-                className={`relative flex items-center gap-1 px-2.5 py-1.5 text-sm transition-colors ${
+                className={`relative flex items-center gap-1 px-2.5 py-1 text-sm transition-colors ${
                   chrome === "none" ? "bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
                 }`}
               >
@@ -879,7 +879,7 @@ function SplitView() {
               </button>
               <button
                 onClick={() => setChrome("nowindow")}
-                className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
                   chrome === "nowindow" ? "bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
                 }`}
               >
