@@ -726,6 +726,7 @@ function SplitView() {
               <option value={32}>32px</option>
               <option value={52}>52px</option>
               <option value={64}>64px</option>
+              <option value={128}>128px</option>
             </select>
           </div>
 
