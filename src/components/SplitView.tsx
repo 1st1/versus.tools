@@ -323,6 +323,7 @@ function SplitView() {
   });
   const [historyOpen, setHistoryOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
+  const [editorHeight, setEditorHeight] = usePersist("editorHeight", 176);
   const currentFont = FONTS.find((f) => f.value === fontValue) || FONTS[0];
   const currentSyntaxTheme = SYNTAX_THEMES.find((t) => t.value === syntaxTheme) || SYNTAX_THEMES[0];
 
@@ -1085,7 +1086,10 @@ function SplitView() {
                 ))}
               </select>
             </div>
-            <div className="relative h-44 w-full rounded-lg border border-zinc-800 bg-zinc-900/80 focus-within:border-zinc-600">
+            <div
+              className="relative w-full overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/80 focus-within:border-zinc-600"
+              style={{ height: editorHeight, minHeight: "calc(6 * 1.625em + 2rem)", maxHeight: "70vh" }}
+            >
               <div
                 className="shiki-output pointer-events-none absolute inset-0 overflow-auto p-4 font-mono text-sm leading-relaxed"
                 aria-hidden="true"
@@ -1124,7 +1128,10 @@ function SplitView() {
                 ))}
               </select>
             </div>
-            <div className="relative h-44 w-full rounded-lg border border-zinc-800 bg-zinc-900/80 focus-within:border-zinc-600">
+            <div
+              className="relative w-full overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/80 focus-within:border-zinc-600"
+              style={{ height: editorHeight, minHeight: "calc(6 * 1.625em + 2rem)", maxHeight: "70vh" }}
+            >
               <div
                 className="shiki-output pointer-events-none absolute inset-0 overflow-auto p-4 font-mono text-sm leading-relaxed"
                 aria-hidden="true"
@@ -1145,6 +1152,30 @@ function SplitView() {
             </div>
           </div>
           )}
+        </div>
+        {/* Drag handle to resize editors */}
+        <div
+          className="-mt-4 mx-auto flex w-12 cursor-row-resize items-center justify-center py-1 text-zinc-600 hover:text-zinc-400"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            const startY = e.clientY;
+            const startH = editorHeight;
+            const onMove = (ev: MouseEvent) => {
+              const newH = Math.max(100, startH + ev.clientY - startY);
+              setEditorHeight(newH);
+            };
+            const onUp = () => {
+              document.removeEventListener("mousemove", onMove);
+              document.removeEventListener("mouseup", onUp);
+            };
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+          }}
+        >
+          <svg width="20" height="6" viewBox="0 0 20 6" fill="currentColor">
+            <circle cx="4" cy="1" r="1" /><circle cx="10" cy="1" r="1" /><circle cx="16" cy="1" r="1" />
+            <circle cx="4" cy="5" r="1" /><circle cx="10" cy="5" r="1" /><circle cx="16" cy="5" r="1" />
+          </svg>
         </div>
 
         {/* Preview */}
