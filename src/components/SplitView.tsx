@@ -526,7 +526,7 @@ function SplitView() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Header */}
-      <header className="border-b border-zinc-800/60 px-6 py-4">
+      <header className="border-b border-zinc-800/60 px-3 py-3 md:px-6 md:py-4">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between">
           <h1 className="text-lg font-semibold tracking-tight">
             <span className="text-zinc-500">versus</span>
@@ -537,7 +537,7 @@ function SplitView() {
             <div className="relative" ref={historyMenuRef}>
               <button
                 onClick={() => setHistoryOpen(!historyOpen)}
-                className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-2.5 py-1.5 md:px-4 md:py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
               >
                 History
                 <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="ml-0.5">
@@ -575,7 +575,7 @@ function SplitView() {
               <button
                 onClick={() => setExportOpen(!exportOpen)}
                 disabled={exporting}
-                className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 md:px-4 md:py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {exporting ? "Exporting..." : "Export"}
                 <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="ml-0.5">
@@ -604,9 +604,9 @@ function SplitView() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-6 py-6">
+      <main className="mx-auto max-w-[1400px] px-3 py-4 md:px-6 md:py-6">
         {/* Controls */}
-        <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 md:gap-x-6 md:gap-y-3">
           {/* Font */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -889,7 +889,7 @@ function SplitView() {
         </div>
 
         {/* Code Editors */}
-        <div className={`mb-8 grid ${singleMode ? "grid-cols-1" : "grid-cols-2"} gap-4`}>
+        <div className={`mb-6 md:mb-8 grid ${singleMode ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"} gap-3 md:gap-4`}>
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <input
@@ -978,7 +978,7 @@ function SplitView() {
         </div>
 
         <div
-          className="flex justify-center overflow-x-auto rounded-xl border border-zinc-800/60 p-6"
+          className="flex justify-center overflow-x-auto rounded-xl border border-zinc-800/60 p-2 md:p-6"
           style={{
             background: "conic-gradient(#1a1a1a 25%, #141414 25% 50%, #1a1a1a 50% 75%, #141414 75%) 0 0 / 16px 16px",
           }}
@@ -1111,7 +1111,7 @@ function SplitView() {
 
       </main>
 
-      <footer className="border-t border-zinc-800/60 px-6 py-4">
+      <footer className="border-t border-zinc-800/60 px-3 py-3 md:px-6 md:py-4">
         <div className="mx-auto flex max-w-[1400px] items-center justify-center gap-3 text-xs text-zinc-500">
           <a
             href="https://github.com/1st1/versus.tools"
