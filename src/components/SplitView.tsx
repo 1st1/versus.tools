@@ -83,6 +83,7 @@ interface Gradient {
   light?: boolean;
   lightBg?: boolean;
   gif?: string;
+  gifPosition?: "cover" | "bottom-right";
   minMarginBottom?: number;
 }
 
@@ -147,7 +148,14 @@ const GRADIENTS: Gradient[] = [
     name: "Fire",
     css: "#000 url(/fire.gif) center / cover no-repeat",
     gif: "/fire.gif",
+    gifPosition: "cover",
     minMarginBottom: 20,
+  },
+  {
+    name: "Monkey",
+    css: "#000 url(/monkey.gif) right bottom / auto no-repeat",
+    gif: "/monkey.gif",
+    gifPosition: "bottom-right",
   },
 ];
 
@@ -515,19 +523,28 @@ function SplitView() {
         patchCtx.putImageData(imageData, 0, 0);
         gifAccumCtx.drawImage(patchCanvas, dims.left, dims.top);
 
-        // Scale the accumulated fire frame to cover the output dimensions
+        // Draw the accumulated GIF frame onto the fire canvas
         fireCtx.clearRect(0, 0, w, h);
-        const scaleX = w / gifW;
-        const scaleY = h / gifH;
-        const scale = Math.max(scaleX, scaleY);
-        const dw = gifW * scale;
-        const dh = gifH * scale;
-        const dx = (w - dw) / 2;
-        const dy = (h - dh) / 2;
-        fireCtx.drawImage(gifAccum, dx, dy, dw, dh);
+        if (gradient.gifPosition === "bottom-right") {
+          // Place at original size in bottom-right corner
+          const dx = w - gifW;
+          const dy = h - gifH;
+          fireCtx.drawImage(gifAccum, dx, dy);
+        } else {
+          // Cover: scale to fill
+          const scaleX = w / gifW;
+          const scaleY = h / gifH;
+          const scale = Math.max(scaleX, scaleY);
+          const dw = gifW * scale;
+          const dh = gifH * scale;
+          const dx = (w - dw) / 2;
+          const dy = (h - dh) / 2;
+          fireCtx.drawImage(gifAccum, dx, dy, dw, dh);
+        }
 
-        // Composite: fire bg + card overlay
-        ctx.clearRect(0, 0, w, h);
+        // Composite: black bg + gif frame + card overlay
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, w, h);
         ctx.drawImage(fireCanvas, 0, 0);
         ctx.drawImage(cardImg, 0, 0);
 
