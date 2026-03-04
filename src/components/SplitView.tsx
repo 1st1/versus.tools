@@ -82,6 +82,8 @@ interface Gradient {
   vercel?: boolean;
   light?: boolean;
   lightBg?: boolean;
+  gif?: string;
+  minMarginBottom?: number;
 }
 
 const GRADIENTS: Gradient[] = [
@@ -140,6 +142,12 @@ const GRADIENTS: Gradient[] = [
     vercel: true,
     windowBg: "#ffffff",
     light: true,
+  },
+  {
+    name: "Fire",
+    css: "#000 url(/fire.gif) center / cover no-repeat",
+    gif: "/fire.gif",
+    minMarginBottom: 20,
   },
 ];
 
@@ -286,6 +294,7 @@ function SplitView() {
   const [leftEditorHtml, setLeftEditorHtml] = useState("");
   const [rightEditorHtml, setRightEditorHtml] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState("");
   const [fontSize, setFontSize] = usePersist("fontSize", 14);
   const [padding, setPadding] = usePersist("padding", 24);
   const [margin, setMargin] = usePersist("margin", 52);
@@ -422,6 +431,142 @@ function SplitView() {
       console.error("Export failed:", err);
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleExportGif = async () => {
+    if (!exportRef.current || !gradient.gif) return;
+    setExporting(true);
+    setExportOpen(false);
+    setExportProgress("Preparing...");
+    try {
+      const el = exportRef.current;
+
+      // Capture card with transparent background at 1x (GIF doesn't need retina)
+      const origBg = el.style.background;
+      el.style.background = "transparent";
+      const cardDataUrl = await toPng(el, { pixelRatio: 1 });
+      el.style.background = origBg;
+
+      // Load card image
+      const cardImg = await new Promise<HTMLImageElement>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.src = cardDataUrl;
+      });
+
+      // Decode fire GIF frames
+      const { parseGIF, decompressFrames } = await import("gifuct-js");
+      const resp = await fetch(gradient.gif);
+      const buf = await resp.arrayBuffer();
+      const parsed = parseGIF(buf);
+      const frames = decompressFrames(parsed, true);
+      if (frames.length === 0) throw new Error("No frames in GIF");
+
+      const { GIFEncoder, quantize, applyPalette } = await import("gifenc");
+
+      const w = cardImg.width;
+      const h = cardImg.height;
+      const encoder = GIFEncoder();
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+
+      // Temp canvas for building each fire frame at full size
+      const fireCanvas = document.createElement("canvas");
+      fireCanvas.width = w;
+      fireCanvas.height = h;
+      const fireCtx = fireCanvas.getContext("2d")!;
+
+      // Source GIF full dimensions
+      const gifW = parsed.lsd.width;
+      const gifH = parsed.lsd.height;
+
+      // Persistent canvas to accumulate GIF frames (handles partial patches + disposal)
+      const gifAccum = document.createElement("canvas");
+      gifAccum.width = gifW;
+      gifAccum.height = gifH;
+      const gifAccumCtx = gifAccum.getContext("2d")!;
+
+      // Temp canvas for individual patches
+      const patchCanvas = document.createElement("canvas");
+      const patchCtx = patchCanvas.getContext("2d")!;
+
+      for (let i = 0; i < frames.length; i++) {
+        setExportProgress(`Frame ${i + 1}/${frames.length}`);
+        await new Promise((r) => setTimeout(r, 0));
+
+        const frame = frames[i];
+        const { dims, patch, disposalType } = frame;
+
+        // Save state before drawing for disposal type 3 (restore to previous)
+        let savedData: ImageData | null = null;
+        if (disposalType === 3) {
+          savedData = gifAccumCtx.getImageData(0, 0, gifW, gifH);
+        }
+
+        // Draw this frame's patch onto the accumulator at the correct offset
+        patchCanvas.width = dims.width;
+        patchCanvas.height = dims.height;
+        const imageData = patchCtx.createImageData(dims.width, dims.height);
+        imageData.data.set(patch);
+        patchCtx.putImageData(imageData, 0, 0);
+        gifAccumCtx.drawImage(patchCanvas, dims.left, dims.top);
+
+        // Scale the accumulated fire frame to cover the output dimensions
+        fireCtx.clearRect(0, 0, w, h);
+        const scaleX = w / gifW;
+        const scaleY = h / gifH;
+        const scale = Math.max(scaleX, scaleY);
+        const dw = gifW * scale;
+        const dh = gifH * scale;
+        const dx = (w - dw) / 2;
+        const dy = (h - dh) / 2;
+        fireCtx.drawImage(gifAccum, dx, dy, dw, dh);
+
+        // Composite: fire bg + card overlay
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(fireCanvas, 0, 0);
+        ctx.drawImage(cardImg, 0, 0);
+
+        // Quantize and encode
+        const pixels = ctx.getImageData(0, 0, w, h);
+        const palette = quantize(pixels.data, 256);
+        const index = applyPalette(pixels.data, palette);
+        const delay = frame.delay || 100;
+        encoder.writeFrame(index, w, h, { palette, delay });
+
+        // Handle disposal
+        if (disposalType === 2) {
+          // Dispose to background — clear the patch region
+          gifAccumCtx.clearRect(dims.left, dims.top, dims.width, dims.height);
+        } else if (disposalType === 3 && savedData) {
+          // Restore to previous
+          gifAccumCtx.putImageData(savedData, 0, 0);
+        }
+        // disposalType 0 or 1: leave as-is (keep accumulated)
+      }
+
+      encoder.finish();
+      const bytes = encoder.bytes();
+      const blob = new Blob([new Uint8Array(bytes)], { type: "image/gif" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = "versus-tools-fire.gif";
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      // Save thumbnail to history (static PNG)
+      const thumbUrl = await toPng(el, { pixelRatio: 1 });
+      await saveToHistory(thumbUrl);
+    } catch (err) {
+      console.error("GIF export failed:", err);
+    } finally {
+      setExporting(false);
+      setExportProgress("");
     }
   };
 
@@ -577,7 +722,7 @@ function SplitView() {
                 disabled={exporting}
                 className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 md:px-4 md:py-1.5 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {exporting ? "Exporting..." : "Export"}
+                {exporting ? (exportProgress || "Exporting...") : "Export"}
                 <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="ml-0.5">
                   <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -597,6 +742,14 @@ function SplitView() {
                   <button onClick={() => handleExportSvg(true)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
                     Export SVG (transparent)
                   </button>
+                  {gradient.gif && (
+                    <>
+                      <div className="mx-3 my-1 border-t border-zinc-700/60" />
+                      <button onClick={handleExportGif} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
+                        Export GIF
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -802,11 +955,13 @@ function SplitView() {
                   style={{
                     background: g.transparent
                       ? "conic-gradient(#555 25%, #333 25% 50%, #555 50% 75%, #333 75%) 0 0 / 6px 6px"
-                      : g.dots
-                        ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${g.css}`
-                        : g.vercel
-                          ? (g.windowBg === "#ffffff" ? "#fff" : "#000")
-                          : g.css,
+                      : g.gif
+                        ? `url(${g.gif}) center/cover`
+                        : g.dots
+                          ? `radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px) 0 0 / 5px 5px, ${g.css}`
+                          : g.vercel
+                            ? (g.windowBg === "#ffffff" ? "#fff" : "#000")
+                            : g.css,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -989,7 +1144,7 @@ function SplitView() {
             ref={exportRef}
             style={{
               background: gradient.css,
-              padding: `${margin}px`,
+              padding: `${margin}px ${margin}px ${Math.max(margin, gradient.minMarginBottom ?? 0)}px`,
               width: "fit-content",
               minWidth: "auto",
               position: "relative",
