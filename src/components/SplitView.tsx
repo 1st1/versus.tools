@@ -4,7 +4,6 @@ import {
   useState,
   useEffect,
   useRef,
-  useCallback,
   useContext,
   createContext,
   useMemo,
@@ -17,6 +16,43 @@ import { TrafficLights } from "./TrafficLights";
 import { PanelLabel } from "./PanelLabel";
 import { DiffRender } from "./DiffRender";
 import { NormalRender } from "./NormalRender";
+
+interface Snapshot {
+  leftCode: string; rightCode: string;
+  leftLang: string; rightLang: string;
+  leftLabel: string; rightLabel: string;
+  gradientIndex: number; fontSize: number;
+  padding: number; margin: number;
+  layout: string; chrome: string;
+  fontValue: string; ligatures: boolean;
+  fontWeight: number; diffMode: boolean;
+  syntaxTheme: string;
+}
+
+interface HistoryEntry extends Snapshot {
+  id: string;
+  timestamp: number;
+  thumbnail: string;
+}
+
+async function generateThumbnail(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX_W = 240;
+      const scale = MAX_W / img.width;
+      const w = MAX_W;
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.src = dataUrl;
+  });
+}
 
 const LANGUAGES = [
   { value: "typescript", label: "TypeScript" },
@@ -211,6 +247,14 @@ function usePersist<T>(key: string, fallback: T) {
   return [value, setValue] as const;
 }
 
+function timeAgo(ts: number): string {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
 export default function SplitViewShell() {
   const [store, setStore] = useState<Record<string, unknown> | null>(null);
 
@@ -250,6 +294,13 @@ function SplitView() {
   const [fontWeight, setFontWeight] = usePersist("fontWeight", 400);
   const [diffMode, setDiffMode] = usePersist("diffMode", false);
   const [syntaxTheme, setSyntaxTheme] = usePersist<SyntaxThemeValue>("syntaxTheme", "github");
+  const [history, setHistory] = useState<HistoryEntry[]>(() => {
+    try {
+      const raw = localStorage.getItem("vs:history");
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
+  const [historyOpen, setHistoryOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const currentFont = FONTS.find((f) => f.value === fontValue) || FONTS[0];
   const currentSyntaxTheme = SYNTAX_THEMES.find((t) => t.value === syntaxTheme) || SYNTAX_THEMES[0];
@@ -268,6 +319,7 @@ function SplitView() {
 
   const [exportOpen, setExportOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const historyMenuRef = useRef<HTMLDivElement>(null);
 
   // Close export dropdown on outside click
   useEffect(() => {
@@ -281,7 +333,51 @@ function SplitView() {
     return () => document.removeEventListener("mousedown", handler);
   }, [exportOpen]);
 
-  const handleExportPng = useCallback(async (pixelRatio: number) => {
+  // Close history dropdown on outside click
+  useEffect(() => {
+    if (!historyOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (historyMenuRef.current && !historyMenuRef.current.contains(e.target as Node)) {
+        setHistoryOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [historyOpen]);
+
+  const getSnapshot = (): Snapshot => ({
+    leftCode, rightCode, leftLang, rightLang, leftLabel, rightLabel,
+    gradientIndex, fontSize, padding, margin, layout, chrome,
+    fontValue, ligatures, fontWeight, diffMode, syntaxTheme,
+  });
+
+  const restoreSnapshot = (snap: Snapshot) => {
+    setLeftCode(snap.leftCode); setRightCode(snap.rightCode);
+    setLeftLang(snap.leftLang as Language); setRightLang(snap.rightLang as Language);
+    setLeftLabel(snap.leftLabel); setRightLabel(snap.rightLabel);
+    setGradientIndex(snap.gradientIndex); setFontSize(snap.fontSize);
+    setPadding(snap.padding); setMargin(snap.margin);
+    setLayout(snap.layout as "side" | "stack"); setChrome(snap.chrome as "color" | "gray" | "none" | "nowindow");
+    setFontValue(snap.fontValue as FontValue); setLigatures(snap.ligatures);
+    setFontWeight(snap.fontWeight); setDiffMode(snap.diffMode);
+    setSyntaxTheme(snap.syntaxTheme);
+  };
+
+  const saveToHistory = async (dataUrl: string) => {
+    const thumbnail = await generateThumbnail(dataUrl);
+    const snap = getSnapshot();
+    const fp = JSON.stringify(snap);
+    const filtered = history.filter((e) => {
+      const { id, timestamp, thumbnail, ...rest } = e;
+      return JSON.stringify(rest) !== fp;
+    });
+    const entry: HistoryEntry = { ...snap, id: crypto.randomUUID(), timestamp: Date.now(), thumbnail };
+    const next = [entry, ...filtered].slice(0, 100);
+    setHistory(next);
+    try { localStorage.setItem("vs:history", JSON.stringify(next)); } catch {}
+  };
+
+  const handleExportPng = async (pixelRatio: number) => {
     if (!exportRef.current) return;
     setExporting(true);
     setExportOpen(false);
@@ -291,14 +387,15 @@ function SplitView() {
       link.download = `versus-tools-${pixelRatio}x.png`;
       link.href = dataUrl;
       link.click();
+      await saveToHistory(dataUrl);
     } catch (err) {
       console.error("Export failed:", err);
     } finally {
       setExporting(false);
     }
-  }, []);
+  };
 
-  const handleExportSvg = useCallback(async (transparentBg: boolean) => {
+  const handleExportSvg = async (transparentBg: boolean) => {
     if (!exportRef.current) return;
     setExporting(true);
     setExportOpen(false);
@@ -312,12 +409,16 @@ function SplitView() {
       link.download = `versus-tools${transparentBg ? "-transparent" : ""}.svg`;
       link.href = dataUrl;
       link.click();
+      // SVG data URLs contain <foreignObject> which browsers won't render on canvas,
+      // so grab a small PNG for the thumbnail instead
+      const thumbUrl = await toPng(el, { pixelRatio: 1 });
+      await saveToHistory(thumbUrl);
     } catch (err) {
       console.error("Export failed:", err);
     } finally {
       setExporting(false);
     }
-  }, []);
+  };
 
   // Handle Tab key in textareas
   const handleKeyDown = (
@@ -419,34 +520,73 @@ function SplitView() {
             <span className="text-zinc-300">.</span>
             <span className="text-white">tools</span>
           </h1>
-          <div className="relative" ref={exportMenuRef}>
-            <button
-              onClick={() => setExportOpen(!exportOpen)}
-              disabled={exporting}
-              className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {exporting ? "Exporting..." : "Export"}
-              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="ml-0.5">
-                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            {exportOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1.5 min-w-[200px] overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl">
-                <button onClick={() => handleExportPng(2)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
-                  Export PNG 2x
-                </button>
-                <button onClick={() => handleExportPng(4)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
-                  Export PNG 4x
-                </button>
-                <div className="mx-3 my-1 border-t border-zinc-700/60" />
-                <button onClick={() => handleExportSvg(false)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
-                  Export SVG
-                </button>
-                <button onClick={() => handleExportSvg(true)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
-                  Export SVG (transparent)
-                </button>
-              </div>
-            )}
+          <div className="flex items-center gap-2">
+            <div className="relative" ref={historyMenuRef}>
+              <button
+                onClick={() => setHistoryOpen(!historyOpen)}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
+              >
+                History
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="ml-0.5">
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              {historyOpen && (
+                <div className="absolute right-0 top-full z-50 mt-1.5 w-[272px] max-h-[80vh] overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl">
+                  {history.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-zinc-500">No exports yet</div>
+                  ) : (
+                    history.map((entry) => (
+                      <button
+                        key={entry.id}
+                        onClick={() => { restoreSnapshot(entry); setHistoryOpen(false); }}
+                        className="w-full px-2 py-1.5 hover:bg-zinc-800"
+                      >
+                        {entry.thumbnail ? (
+                          <img src={entry.thumbnail} alt="" className="w-full rounded" style={{ display: "block" }} />
+                        ) : (
+                          <div className="text-sm text-zinc-200 truncate px-2">
+                            {entry.leftLabel || entry.rightLabel
+                              ? `${entry.leftLabel || "Untitled"} / ${entry.rightLabel || "Untitled"}`
+                              : "Untitled"}
+                          </div>
+                        )}
+                        <div className="mt-1 text-xs text-zinc-500 px-1">{timeAgo(entry.timestamp)}</div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="relative" ref={exportMenuRef}>
+              <button
+                onClick={() => setExportOpen(!exportOpen)}
+                disabled={exporting}
+                className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {exporting ? "Exporting..." : "Export"}
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="ml-0.5">
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              {exportOpen && (
+                <div className="absolute right-0 top-full z-50 mt-1.5 min-w-[200px] overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl">
+                  <button onClick={() => handleExportPng(2)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
+                    Export PNG 2x
+                  </button>
+                  <button onClick={() => handleExportPng(4)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
+                    Export PNG 4x
+                  </button>
+                  <div className="mx-3 my-1 border-t border-zinc-700/60" />
+                  <button onClick={() => handleExportSvg(false)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
+                    Export SVG
+                  </button>
+                  <button onClick={() => handleExportSvg(true)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
+                    Export SVG (transparent)
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
