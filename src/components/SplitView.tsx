@@ -524,10 +524,10 @@ function SplitView() {
   }, [diffMode, leftCode, rightCode, leftHtml, rightHtml]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen select-none bg-zinc-950 text-zinc-100">
       {/* Header */}
-      <header className="border-b border-zinc-800/60 px-3 py-3 md:px-6 md:py-4">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between">
+      <header className="border-b border-zinc-800/60 py-3 md:py-4">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-3 md:px-6">
           <h1 className="text-lg font-semibold tracking-tight">
             <span className="text-zinc-500">versus</span>
             <span className="text-zinc-300">.</span>
@@ -896,7 +896,7 @@ function SplitView() {
               <input
                 value={leftLabel}
                 onChange={(e) => setLeftLabel(e.target.value)}
-                className="w-48 rounded border border-zinc-800 bg-transparent px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-zinc-500 focus:border-zinc-600 focus:text-zinc-300 focus:outline-none"
+                className="w-48 select-text rounded border border-zinc-800 bg-transparent px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-zinc-500 focus:border-zinc-600 focus:text-zinc-300 focus:outline-none"
                 placeholder="Label"
               />
               <select
@@ -923,7 +923,7 @@ function SplitView() {
                   const pre = e.currentTarget.previousElementSibling;
                   if (pre) { pre.scrollTop = e.currentTarget.scrollTop; pre.scrollLeft = e.currentTarget.scrollLeft; }
                 }}
-                className="absolute inset-0 h-full w-full resize-none bg-transparent p-4 font-mono text-sm leading-relaxed text-transparent caret-zinc-100 placeholder-zinc-600 focus:outline-none"
+                className="absolute inset-0 h-full w-full select-text resize-none bg-transparent p-4 font-mono text-sm leading-relaxed text-transparent caret-zinc-100 placeholder-zinc-600 focus:outline-none"
                 placeholder="Paste your first snippet..."
                 spellCheck={false}
               />
@@ -935,7 +935,7 @@ function SplitView() {
               <input
                 value={rightLabel}
                 onChange={(e) => setRightLabel(e.target.value)}
-                className="w-48 rounded border border-zinc-800 bg-transparent px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-zinc-500 focus:border-zinc-600 focus:text-zinc-300 focus:outline-none"
+                className="w-48 select-text rounded border border-zinc-800 bg-transparent px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-zinc-500 focus:border-zinc-600 focus:text-zinc-300 focus:outline-none"
                 placeholder="Label"
               />
               <select
@@ -962,7 +962,7 @@ function SplitView() {
                   const pre = e.currentTarget.previousElementSibling;
                   if (pre) { pre.scrollTop = e.currentTarget.scrollTop; pre.scrollLeft = e.currentTarget.scrollLeft; }
                 }}
-                className="absolute inset-0 h-full w-full resize-none bg-transparent p-4 font-mono text-sm leading-relaxed text-transparent caret-zinc-100 placeholder-zinc-600 focus:outline-none"
+                className="absolute inset-0 h-full w-full select-text resize-none bg-transparent p-4 font-mono text-sm leading-relaxed text-transparent caret-zinc-100 placeholder-zinc-600 focus:outline-none"
                 placeholder="Paste your second snippet..."
                 spellCheck={false}
               />
@@ -1112,8 +1112,8 @@ function SplitView() {
 
       </main>
 
-      <footer className="border-t border-zinc-800/60 px-3 py-3 md:px-6 md:py-4">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-center gap-3 text-xs text-zinc-500">
+      <footer className="border-t border-zinc-800/60 py-3 md:py-4">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-center gap-3 px-3 md:px-6 text-xs text-zinc-500">
           <a
             href="https://github.com/1st1/versus.tools"
             target="_blank"
