@@ -442,7 +442,7 @@ function SplitView() {
     }
   };
 
-  const handleExportGif = async () => {
+  const handleExportGif = async (pixelRatio: number = 1) => {
     if (!exportRef.current || !gradient.gif) return;
     setExporting(true);
     setExportOpen(false);
@@ -450,10 +450,9 @@ function SplitView() {
     try {
       const el = exportRef.current;
 
-      // Capture card with transparent background at 1x (GIF doesn't need retina)
       const origBg = el.style.background;
       el.style.background = "transparent";
-      const cardDataUrl = await toPng(el, { pixelRatio: 1 });
+      const cardDataUrl = await toPng(el, { pixelRatio });
       el.style.background = origBg;
 
       // Load card image
@@ -571,7 +570,7 @@ function SplitView() {
       const blob = new Blob([new Uint8Array(bytes)], { type: "image/gif" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.download = "versus-tools-fire.gif";
+      link.download = `versus-tools-${pixelRatio}x.gif`;
       link.href = url;
       link.click();
       URL.revokeObjectURL(url);
@@ -762,8 +761,11 @@ function SplitView() {
                   {gradient.gif && (
                     <>
                       <div className="mx-3 my-1 border-t border-zinc-700/60" />
-                      <button onClick={handleExportGif} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
-                        Export GIF
+                      <button onClick={() => handleExportGif(1)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
+                        Export GIF 1x
+                      </button>
+                      <button onClick={() => handleExportGif(2)} className="w-full px-4 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800">
+                        Export GIF 2x
                       </button>
                     </>
                   )}
