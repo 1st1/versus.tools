@@ -691,7 +691,7 @@ function SplitView() {
       {/* Header */}
       <header className="border-b border-zinc-800/60 py-3 md:py-4">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-3 md:px-6">
-          <h1 className="text-lg font-semibold tracking-tight">
+          <h1 className="text-lg font-semibold tracking-tight font-mono">
             <span className="text-zinc-500">versus</span>
             <span className="text-zinc-300">.</span>
             <span className="text-white">tools</span>
