@@ -17,6 +17,8 @@ import { PanelLabel } from "./PanelLabel";
 import { DiffRender } from "./DiffRender";
 import { NormalRender } from "./NormalRender";
 
+type ViewMode = "single" | "split" | "diff";
+
 interface Snapshot {
   leftCode: string; rightCode: string;
   leftLang: string; rightLang: string;
@@ -25,7 +27,7 @@ interface Snapshot {
   padding: number; margin: number;
   layout: string; chrome: string;
   fontValue: string; ligatures: boolean;
-  fontWeight: number; diffMode: boolean;
+  fontWeight: number; mode: ViewMode;
   syntaxTheme: string;
 }
 
@@ -292,7 +294,9 @@ function SplitView() {
   const [fontValue, setFontValue] = usePersist<FontValue>("font", "geist");
   const [ligatures, setLigatures] = usePersist("ligatures", true);
   const [fontWeight, setFontWeight] = usePersist("fontWeight", 400);
-  const [diffMode, setDiffMode] = usePersist("diffMode", false);
+  const [mode, setMode] = usePersist<ViewMode>("mode", "split");
+  const diffMode = mode === "diff";
+  const singleMode = mode === "single";
   const [syntaxTheme, setSyntaxTheme] = usePersist<SyntaxThemeValue>("syntaxTheme", "github");
   const [history, setHistory] = useState<HistoryEntry[]>(() => {
     try {
@@ -348,7 +352,7 @@ function SplitView() {
   const getSnapshot = (): Snapshot => ({
     leftCode, rightCode, leftLang, rightLang, leftLabel, rightLabel,
     gradientIndex, fontSize, padding, margin, layout, chrome,
-    fontValue, ligatures, fontWeight, diffMode, syntaxTheme,
+    fontValue, ligatures, fontWeight, mode, syntaxTheme,
   });
 
   const restoreSnapshot = (snap: Snapshot) => {
@@ -359,7 +363,8 @@ function SplitView() {
     setPadding(snap.padding); setMargin(snap.margin);
     setLayout(snap.layout as "side" | "stack"); setChrome(snap.chrome as "color" | "gray" | "none" | "nowindow");
     setFontValue(snap.fontValue as FontValue); setLigatures(snap.ligatures);
-    setFontWeight(snap.fontWeight); setDiffMode(snap.diffMode);
+    setFontWeight(snap.fontWeight);
+    setMode((snap as any).diffMode != null ? ((snap as any).diffMode ? "diff" : "split") : snap.mode);
     setSyntaxTheme(snap.syntaxTheme);
   };
 
@@ -477,13 +482,21 @@ function SplitView() {
         const results = await Promise.all(
           themes.flatMap((theme) => [
             codeToHtml(leftCode || " ", { lang: leftLang, theme: theme as any }),
-            codeToHtml(rightCode || " ", { lang: rightLang, theme: theme as any }),
+            ...(singleMode ? [] : [codeToHtml(rightCode || " ", { lang: rightLang, theme: theme as any })]),
           ])
         );
         if (!cancelled) {
           const processL = (html: string) => fixPyType(stripFont(html), leftLang);
           const processR = (html: string) => fixPyType(stripFont(html), rightLang);
-          if (themes.length === 1) {
+          if (singleMode) {
+            if (themes.length === 1) {
+              setLeftEditorHtml(processL(results[0]));
+              setLeftHtml(processL(results[0]));
+            } else {
+              setLeftEditorHtml(processL(results[0]));
+              setLeftHtml(processL(results[1]));
+            }
+          } else if (themes.length === 1) {
             setLeftEditorHtml(processL(results[0]));
             setRightEditorHtml(processR(results[1]));
             setLeftHtml(processL(results[0]));
@@ -503,7 +516,7 @@ function SplitView() {
     return () => {
       cancelled = true;
     };
-  }, [leftCode, rightCode, leftLang, rightLang, shikiTheme, currentSyntaxTheme.dark]);
+  }, [leftCode, rightCode, leftLang, rightLang, shikiTheme, currentSyntaxTheme.dark, singleMode]);
 
   const diffResult = useMemo<DiffResult | null>(() => {
     if (!diffMode || !leftHtml || !rightHtml) return null;
@@ -716,14 +729,37 @@ function SplitView() {
             </select>
           </div>
 
-          {/* Layout */}
+          {/* Mode: single / split / diff */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Mode
+            </label>
+            <div className="inline-flex overflow-hidden rounded-md border border-zinc-700/60">
+              {([["single", "1"], ["split", "1+1"], ["diff", "Diff"]] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setMode(value)}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    mode === value
+                      ? "bg-zinc-700 text-white"
+                      : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Layout */}
+          <div className="flex items-center gap-2">
+            <label className={`text-xs font-medium uppercase tracking-wider ${singleMode ? "text-zinc-700" : "text-zinc-500"}`}>
               Layout
             </label>
-            <div className="flex overflow-hidden rounded-md border border-zinc-700/60">
+            <div className={`flex overflow-hidden rounded-md border border-zinc-700/60 ${singleMode ? "opacity-40 pointer-events-none" : ""}`}>
               <button
                 onClick={() => setLayout("side")}
+                disabled={singleMode}
                 className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                   layout === "side"
                     ? "bg-zinc-700 text-white"
@@ -734,6 +770,7 @@ function SplitView() {
               </button>
               <button
                 onClick={() => setLayout("stack")}
+                disabled={singleMode}
                 className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                   layout === "stack"
                     ? "bg-zinc-700 text-white"
@@ -744,18 +781,6 @@ function SplitView() {
               </button>
             </div>
           </div>
-
-          {/* Diff mode */}
-          <button
-            onClick={() => setDiffMode(!diffMode)}
-            className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-              diffMode
-                ? "border-zinc-600 bg-zinc-700 text-white"
-                : "border-zinc-700/60 bg-zinc-900 text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            Diff
-          </button>
 
           {/* Gradients */}
           <div className="flex items-center gap-2">
@@ -864,7 +889,7 @@ function SplitView() {
         </div>
 
         {/* Code Editors */}
-        <div className="mb-8 grid grid-cols-2 gap-4">
+        <div className={`mb-8 grid ${singleMode ? "grid-cols-1" : "grid-cols-2"} gap-4`}>
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <input
@@ -903,6 +928,7 @@ function SplitView() {
               />
             </div>
           </div>
+          {!singleMode && (
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <input
@@ -941,6 +967,7 @@ function SplitView() {
               />
             </div>
           </div>
+          )}
         </div>
 
         {/* Preview */}
@@ -1012,7 +1039,17 @@ function SplitView() {
                 flexDirection: layout === "stack" ? "column" : "row",
               }}
             >
-              {diffMode && diffResult && layout === "stack" ? (
+              {singleMode ? (
+                /* Single panel */
+                <div style={{ flex: 1 }}>
+                  {effectiveChrome !== "none" && effectiveChrome !== "nowindow" && <TrafficLights gray={effectiveChrome === "gray"} />}
+                  <div style={{ padding: `${padding}px` }}>
+                    {leftLabel && <PanelLabel label={leftLabel} vercel={gradient.vercel} light={gradient.light} />}
+                    <NormalRender html={leftHtml} fontSize={fontSize}
+                      fontFamily={currentFont.css} fontWeight={fontWeight} ligatures={ligatures} />
+                  </div>
+                </div>
+              ) : diffMode && diffResult && layout === "stack" ? (
                 /* Unified diff: single panel */
                 <div style={{ flex: 1 }}>
                   {effectiveChrome !== "none" && effectiveChrome !== "nowindow" && <TrafficLights gray={effectiveChrome === "gray"} />}
