@@ -342,7 +342,7 @@ function SplitView() {
   const gradient = GRADIENTS[gradientIndex] || GRADIENTS[0];
   const isVercelLight = gradient.vercel && gradient.windowBg === "#ffffff";
   const effectiveChrome = gradient.vercel ? "none" : chrome;
-  const needsLightTheme = (gradient.light && effectiveChrome !== "nowindow")
+  const needsLightTheme = gradient.light
     || (gradient.lightBg && effectiveChrome === "nowindow");
   const shikiTheme = needsLightTheme ? currentSyntaxTheme.light : currentSyntaxTheme.dark;
 
