@@ -525,10 +525,12 @@ function SplitView() {
         // Draw the accumulated GIF frame onto the fire canvas
         fireCtx.clearRect(0, 0, w, h);
         if (gradient.gifPosition === "bottom-right") {
-          // Place at original size in bottom-right corner
-          const dx = w - gifW;
-          const dy = h - gifH;
-          fireCtx.drawImage(gifAccum, dx, dy);
+          // Place scaled in bottom-right corner
+          const dw = gifW * pixelRatio;
+          const dh = gifH * pixelRatio;
+          const dx = w - dw;
+          const dy = h - dh;
+          fireCtx.drawImage(gifAccum, dx, dy, dw, dh);
         } else {
           // Cover: scale to fill
           const scaleX = w / gifW;
