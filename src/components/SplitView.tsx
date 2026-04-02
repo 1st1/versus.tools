@@ -157,6 +157,13 @@ const GRADIENTS: Gradient[] = [
     gif: "/monkey.gif",
     gifPosition: "bottom-right",
   },
+  {
+    name: "Mind",
+    css: "#000 url(/mind.gif) center / cover no-repeat",
+    gif: "/mind.gif",
+    gifPosition: "cover",
+    minMarginBottom: 20,
+  },
 ];
 
 const DEFAULT_LEFT = `function getUser(id: string) {
