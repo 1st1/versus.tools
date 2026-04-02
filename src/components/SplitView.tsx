@@ -69,6 +69,10 @@ const LANGUAGES = [
   { value: "kotlin", label: "Kotlin" },
   { value: "php", label: "PHP" },
   { value: "ruby", label: "Ruby" },
+  { value: "json", label: "JSON" },
+  { value: "toml", label: "TOML" },
+  { value: "yaml", label: "YAML" },
+  { value: "css", label: "CSS" },
 ] as const;
 
 type Language = (typeof LANGUAGES)[number]["value"];
